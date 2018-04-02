@@ -1,0 +1,6 @@
+venv/
+SECRET_KEY
+settings_local.py
+*.pyc
+CLIENT_ID
+CLIENT_SECRET
