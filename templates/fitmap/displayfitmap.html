@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>FitMap</title>
+    	<meta name="viewport" content="initial-scale=1.0">
+    	<meta charset="utf-8">
+    	<style>
+      	/* Always set the map height explicitly to define the size of the div
+        element that contains the map. */
+      	#map {
+        	height: 100%;
+      	}
+      	/* Optional: Makes the sample page fill the window. */
+      	html, body {
+        	height: 100%;
+        	margin: 0;
+        	padding: 0;
+      	}
+    	</style>
+  	</head>
+
+	<body>
+  		<h2><a href="{% url 'homepage-index' %}">Homepage</a></h2>
+  		<h2>{{fitmappedrte.fitroute.name}}</h2>
+  		
+  			
+  		<div id="map"></div>
+  		<body onload="initMap()">
+  	
+		<script>
+			// Initiates the Google Map
+			function initMap() {
+				var start = {lat: {{fitmappedrte.fitroute.start.lat}}, lng: {{fitmappedrte.fitroute.start.long}}};
+				var mapOptions = { 
+					zoom:15,
+					center: start
+				} // Close MapOptions
+				var map = new google.maps.Map(document.getElementById('map'), mapOptions);
+
+				var marker = new google.maps.Marker({
+				position: start,
+				map: map
+				});  //Close marker
+				
+				calculateRoute(map);
+		
+				} //Close InitMap
+
+			  function calculateRoute(map) {
+			  	//var encodedPath="{{fitmappedrte.maprtedata}}";
+			  	//var encodedPath="mnniGr~|cNHl@Fl@BL??ABABAB?@?B?@@BHp@F`@Ht@L`A@?XW@A@A@?@??@?@@D@RJENEXKlA_@xBs@bA]LCRIXIJCNCrDo@REx@QXE|@QRE??b@hDTfBR|ArAfKVxBLh@bA|HDb@N`Ab@hDF`@Hp@BLHr@Jv@x@bGZ~B\pCd@pD\fC^rCVfBFb@F`@x@fGR|Af@nDPvAF`@LbA^rCHn@Lz@n@tEr@nFp@zENdA^xCZ`CLx@PvAT~AHl@PxAHn@ZrB^tCDPXtBFl@RzABRF`@ZbCJr@Hl@Jn@XnBN|@Hd@BJBHDJDJDLHNDDBFBBBBB@zBhCJNNRNZHVJVHXPlAFh@DXFj@BL@L@J@L@J@N?L@N?J@P?Z?d@EtAA\C`BATAT?RALARAJAHALAHCLEXCFAJCHERERGVo@lCu@|Cg@zBWfA[rA[rAg@rBSz@UhASx@M|@O`AIz@Gv@Ex@Cd@GnBCx@@h@@rA?b@Bn@B^f@rDfAtINbAb@~CXjB";
+			  	var decodedPath = google.maps.geometry.encoding.decodePath("{{fitmappedrte.maprtedata}}");
+				
+				var runPath= new google.maps.Polyline({
+					path: decodedPath,
+					strokeColor: '#FF0000',
+					strokeWeight:4
+				});
+				runPath.setMap(map);
+
+			  } // Close Calculate Route
+	
+
+	
+		</script>
+		<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCGj9lv67pbSIpSh-sZUGCINHE-3H5r_Z8&libraries=geometry,places"></script>
+  		<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
+  	</body>
+</html>
