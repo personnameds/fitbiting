@@ -1,10 +1,46 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <title>Display Fitbit Data</title>
-  </head>
-  <body>
-  	Displays Nothing so Far but the Data is in the Admin		
-  	<h3><a href="{% url 'homepage-index' %}">Homepage</a></h3>
-	<h3><a href="{% url 'admin:index' %}">Admin</a></h3>  </body>
+  	<head>
+    	<title>Display Fitbit Data</title>
+    	
+    	<!-- Load the AJAX API -->
+    	<script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+    	<script type="text/javascript">
+    		
+    		// Load the Visualizations API and the corechart package
+    		google.charts.load('current', {'packages':['corechart']});
+    		
+    		// Set a callback to run when the Google Visualization API is loaded
+    		google.charts.setOnLoadCallback(drawLineGraph);
+    		
+    		// Creates the chart and passes the data
+		  	function drawLineGraph() {
+				
+				//Create the data table
+				var data = new google.visualization.DataTable();
+				data.addColumn('date', 'Date');
+				{% for fitbiter in fitbiters %}
+					data.addColumn('number', '{{fitbiter.fitbit_id}}');
+				{% endfor %}
+				{% for data_row in all_data %}
+					data.addRows([[new Date('{{data_row.0}}'), {{data_row.1}},{{data_row.2}}],]);
+				{% endfor %}
+				var options = {
+			  		title: 'Last Five Days',
+			  		legend: { position: 'bottom' }
+					};
+
+				var chart = new google.visualization.LineChart(document.getElementById('chart_div'));
+
+				chart.draw(data, options);
+		  	}
+		  </script>
+    		
+    		
+  	</head>
+  	<body>	
+		<h3><a href="{% url 'homepage-index' %}">Homepage</a></h3>
+		<h3><a href="{% url 'admin:index' %}">Admin</a></h3>  
+		<div id="chart_div" style="width: 900px; height: 500px"></div>
+	</body>
 </html>

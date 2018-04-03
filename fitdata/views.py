@@ -25,9 +25,23 @@ class FitDataIndexView(TemplateView):
 	def get_context_data(self, **kwargs):
 		context = super().get_context_data(**kwargs)
 		fitbiters=Fitbiter.objects.all()
+
+		#I'm cheating by hardcoding everything, also very inefficient
+		#This is a stupid temporary hack		
+		i=0
+		fitbiter_data=[]
 		for fitbiter in fitbiters:
 			UpdateFitbitDataFunc(fitbiter)
+			fitbiter_data.append(FitData.objects.filter(fitbiter=fitbiter).values_list('distance', flat=True).order_by('-date')[:5])
+			i += 1
 		
-		#context['fitbiters'] = fitbiters
-		#context['5_latest_dates']=FitData.objects.values_list('date', flat=True).order_by('-date')[:5]
+		five_latest_dates=FitData.objects.filter(fitbiter=fitbiter).values_list('date', flat=True).order_by('-date')[:5]
+		all_data=[]
+		for i in range(0,5):
+			all_data.append([five_latest_dates[i],fitbiter_data[0][i],fitbiter_data[1][i]])
+
+		context['all_data']=all_data
+		context['fitbiters'] = fitbiters
+		context['fitbiter_data']=fitbiter_data
+		context['5_latest_dates']=FitData.objects.filter(fitbiter=fitbiter).values_list('date', flat=True).order_by('-date')[:5]
 		return context

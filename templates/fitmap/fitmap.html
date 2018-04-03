@@ -17,19 +17,52 @@
         	padding: 0;
       	}
     	</style>
-  	</head>
 
-	<body>
-  		<h3><a href="{% url 'homepage-index' %}">Homepage</a></h3>
-		<h3><a href="{% url 'admin:index' %}">Admin</a></h3>
-		<h3><a href="{% url 'fitdata-index' %}">Fitbit Data</a></h3>
-		<h3><a href="{% url 'fitmap-view' %}">Fit Mapping</a></h3>
-		<h3><a href="{% url 'display-fitmap-view' %}">Display Encoded Data</a></h2>
-  		<h2>{{fitroute.name}}</h2>
-  		<button onclick="initMap()">Click me</button>
-  		<div id="map"></div>
-  		
+
 		<script>
+			
+			//Show the route that has been run so far
+			function showRoute() {
+				
+				//Decode the Polylines
+				var decodedPath = google.maps.geometry.encoding.decodePath("{{fitmappedrte.maprtedata}}");
+				
+				//Create Path from the Polylines
+				var runPath= new google.maps.Polyline({
+					path: decodedPath,
+					strokeColor: '#FF0000',
+					strokeWeight:4
+				});
+				
+				//Get the first and last position of the latest route
+				var last_position=decodedPath.pop();
+				var first_position=decodedPath[0];
+				
+				//Create the Map object
+				var map = new google.maps.Map(document.getElementById('map'));
+				
+				//Create markers for the first and last position
+				var last_marker = new google.maps.Marker({
+					position: last_position,
+					map: map
+				});  
+				var first_marker = new google.maps.Marker({
+					position: first_position,
+					map: map
+				});  
+				
+				//Make the map the size of the latest route
+				var bounds=new google.maps.LatLngBounds();
+				bounds.extend(last_marker.getPosition());
+				bounds.extend(first_marker.getPosition());
+				map.fitBounds(bounds);
+				
+				//Display the latest run
+				runPath.setMap(map);
+			
+			} //End of showRoute function
+		
+		
 			// Initiates the Google Map
 			function initMap() {
 				var start = {lat: {{fitroute.start.lat}}, lng: {{fitroute.start.long}}};
@@ -127,5 +160,24 @@
 		</script>
 		<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCGj9lv67pbSIpSh-sZUGCINHE-3H5r_Z8&libraries=geometry,places"></script>
   		<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
-  	</body>
+	</head>
+	
+	<body>
+  		<h3><a href="{% url 'homepage-index' %}">Homepage</a></h3>
+		<h3><a href="{% url 'admin:index' %}">Admin</a></h3>
+		<h3><a href="{% url 'fitdata-index' %}">Fitbit Data</a></h3>
+		<h3><a href="{% url 'fitmap-view' %}">Fit Mapping</a></h3>
+		<h3><a href="{% url 'display-fitmap-view' %}">Display Encoded Data</a></h2>
+  		
+  		<h2>{{fitroute.name}}</h2>
+  		See the run so far. <br>
+  		
+  		<body onload="showRoute()">
+  		
+  		<!--- This will be for updating route -->
+  		<button onclick="initMap()">Add to how much I have run of the route</button>
+  		<div id="map"></div>
+  		
+  	 </body>	
+
 </html>
