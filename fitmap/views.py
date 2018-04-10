@@ -1,48 +1,97 @@
 from django.shortcuts import render, redirect
+from django.http import JsonResponse
 from datetime import datetime
 from django.views.generic import TemplateView
 from .models import FitRoute, FitMappedRte
+from fitdata.models import FitData
+from fitdata.views import UpdateFitbitDataFunc
+from fitbiters.models import Fitbiter
+from datetime import datetime
 
-class FitMapView(TemplateView):
-	template_name="fitmap/fitmap.html"
-	
-	def get_context_data(self, **kwargs):
-		context = super().get_context_data(**kwargs)
-		
-		##Hard Coded for Now
-		fitroute=FitRoute.objects.get(name="Sudeep to Neel")		
-		
-		if FitMappedRte.objects.filter(fitroute=fitroute).exists():
-			context['fitmappedrte']=FitMappedRte.objects.get(fitroute=fitroute)
-		else:	
-			a=DoSomethingElse
-			context['fitroute'] = FitRoute.objects.get(name="Sudeep to Neel")
-		
-		##Get rid of later
-		context['fitroute'] = FitRoute.objects.get(name="Sudeep to Neel")
-		return context
-
-def GetFitMappedRteView(request):
-	encodedPath=request.GET.get('encodedPath')
-	
-	##Hard Coded for Now
+def FitMapIndex(request):
+	##I could use a view here to choose routes
 	fitroute=FitRoute.objects.get(name="Sudeep to Neel")
-
-	if FitMappedRte.objects.filter(fitroute=fitroute, date=datetime.today().date()).exists():
-		fitmappedrte=FitMappedRte.objects.get(fitroute=fitroute, date=datetime.today().date())
-		fitmappedrte.maprtedata=encodedPath
+	if FitMappedRte.objects.filter(fitroute=fitroute).exists():
+		return redirect('display-fitmap-view')
 	else:
-		fitmappedrte=FitMappedRte(fitroute=fitroute,
-						date=datetime.today().date(),
-						maprtedata=encodedPath,
-						)
-	fitmappedrte.save()
-	return redirect('homepage-index')
+		return redirect('startmap-view')
 
-class DisplayFitMappedRteView(TemplateView):
+class DisplayFitMapView(TemplateView):
 	template_name="fitmap/displayfitmap.html"
 	
 	def get_context_data(self, **kwargs):
 		context = super().get_context_data(**kwargs)
-		context['fitmappedrte'] = FitMappedRte.objects.get(fitroute__name="Sudeep to Neel")
+		
+		##Update all fitbit data for all users
+		#Later this should be only for user involved in this route
+		UpdateFitbitDataFunc()		
+		
+		##TO DO Hard Coded for Now
+		##Can come from index view
+		fitroute=FitRoute.objects.get(name="Sudeep to Neel")
+		
+
+		##Get FitData from latest update but not including today
+		##Does not include today, because it will update today's data
+		##Gets from all users, later should be only for users involved in routes
+		latest_update=FitMappedRte.objects.filter(fitroute=fitroute).latest('date').date
+		fitdata=FitData.objects.filter(date__gte=latest_update, distance__gt=0)
+		mappedrte_all=FitMappedRte.objects.filter(fitroute=fitroute).order_by('order')
+		
+		context['fitdata_all']=fitdata
+		context['mappedrte_all'] = mappedrte_all
+		context['fitroute']=fitroute
 		return context
+
+class StartMapView(TemplateView):
+	template_name="fitmap/startmap.html"
+	
+	def get_context_data(self, **kwargs):
+		context = super().get_context_data(**kwargs)
+		
+		##Update all fitbit data for all users
+		#Later this should be only for user involved in this route
+		UpdateFitbitDataFunc()
+		
+		##TO DO Hard Coded for Now
+		##Can come from index view
+		fitroute=FitRoute.objects.get(name="Sudeep to Neel")
+		
+		
+		##Will start with today's data only
+		date=datetime.now() ##normal
+		date=datetime.strptime("2018-04-03", "%Y-%m-%d").date() ##for testing purposes because my fitbit broke
+		
+		##Takes all data from today from all Fitbiters
+		context['fitdata_all']=FitData.objects.filter(date=date, distance__gt=0)
+		context['fitroute']=fitroute
+		return context
+ 
+def SaveFitMappedRte(request):
+	encodedPath=request.GET.get('encodedPath')
+	fitroute_name=request.GET.get('fitroute')
+	fitbiter_id=request.GET.get('fitbiter')
+	strokecolor=request.GET.get('strokecolor')
+	order=request.GET.get('order')
+	
+	
+	fitroute=FitRoute.objects.get(name=fitroute_name)
+	fitbiter=Fitbiter.objects.get(fitbit_id=fitbiter_id)
+	date_today=datetime.today().date()
+	
+
+	##if FitMappedRte.objects.filter(fitroute=fitroute, fitbiter=fitbiter, date=date_today).exists():
+	##	fitmappedrte=FitMappedRte.objects.get(fitroute=fitroute, fitbiter=fitbiter, date=date_today)
+	##	fitmappedrte.maprtedata=encodedPath
+	##else:
+	fitmappedrte=FitMappedRte(fitroute=fitroute,
+							fitbiter=fitbiter,
+							date=date_today,
+							maprtedata=encodedPath,
+							colour=strokecolor,
+							order=order,
+						)
+	fitmappedrte.save()
+	return JsonResponse({'response':'success'}) ##returned by not captured, not sure what happens with it?
+
+

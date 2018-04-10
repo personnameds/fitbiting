@@ -36,11 +36,12 @@ class FitRoute(models.Model):
 		return '%s' %self.name
 
 class FitMappedRte(models.Model):
-	##fitbiter=models.ForeignKey(Fitbiter, on_delete=models.PROTECT)
-	##fitdata=models.ForeignKey(Fitdata, on_delete=models.PROTECT)
+	fitbiter=models.ForeignKey(Fitbiter, on_delete=models.PROTECT)
 	fitroute=models.ForeignKey(FitRoute, on_delete=models.CASCADE)
 	date=models.DateField()
 	maprtedata=models.TextField()
+	colour=models.CharField(max_length=7)
+	order=models.PositiveSmallIntegerField();
 	
 	def __str__(self):
 		return '%s on %s' %(self.fitroute.name, self.date)
