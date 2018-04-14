@@ -65,133 +65,144 @@
 				bounds.extend(decodedPath[decodedPath.length-1]);
 				map.fitBounds(bounds);	
 				
-				//Update the map with new data
-				var directionsService = new google.maps.DirectionsService();
-				var start = {lat: decodedPath[decodedPath.length-1].lat(), lng: decodedPath[decodedPath.length-1].lng()};
-				var end = {lat: {{fitroute.end.lat}}, lng: {{fitroute.end.long}}};
-/*				var waypts=[
-					{% for waypoint in fitroute.waypoints.all %}
-						{location: new google.maps.LatLng({{waypoint.lat}},{{waypoint.long}}),stopover: true}
-					{% endfor %}
-							]; //waypts
-*/
-				var request = {
-						   origin: start,
-						   destination: end,
-//						   waypoints: waypts,
-						   travelMode: 'WALKING'
-						  }; // Request	
-				
-				directionsService.route(request, function(result, status) {
-					if (status == 'OK') {
-						console.log('routes:'+result.routes.length);
-						console.log('legs:'+result.routes[0].legs.length);
-						var a=0;
-						var b=0;
-						var c=0;
-						var dist=0;
-						var olddist=0;
-						var latlongs=[];
-						var z=0;
-						var strokecolor=["#0082c8","#3cb44b","#911eb4","#000080","#46f0f0#","#f58231","#f032e6","#e6beff"];
-						var col=0;
-						
-						{% for fitdata in fitdata_all %}
-						
-							//Convert route into polylines
-							var distance={{fitdata.distance}}*1000;
-							var legs=result.routes[0].legs; //legs are point to point
-							legs:
-							for (i = a; i < legs.length; i++) {
-								var steps = legs[i].steps; //steps are steps in each leg
-								steps:
-								for (j=b; j < steps.length; j++) {
-									var nextSegment = steps[j].path; //lat and long for each step
-									segments:
-									for (k=c; k < nextSegment.length; k++) {
-										latlongs[z]=nextSegment[k];  //latlongs holds array of lat and long for each step
-										if (z>0) {
-										olddist=dist;
-										dist+= google.maps.geometry.spherical.computeDistanceBetween(latlongs[z],latlongs[z-1]);
-										}
-										if (dist >= distance) {
-											break legs;
-										}
-										z++;
-
-									} //for k
-								} // for j
-							} // for i
-				
-							//Find the exact point where the distance is met
-							//Finds the spot along the last polyline
-							var percentDist=(distance-olddist)/(dist-olddist);
-							var stopSpot = google.maps.geometry.spherical.interpolate(latlongs[z-1],latlongs[z],percentDist);
-							latlongs[z]=stopSpot;  
-
-							marker = new google.maps.Marker({
-								position: latlongs[0],
-								map: map
-								});
-
-							marker = new google.maps.Marker({
-								position: latlongs[z],
-								map: map
-								});
-
-							var runPath= new google.maps.Polyline({
-								path: latlongs,
-								strokeColor: strokecolor[col],
-								strokeWeight:4
-							});
-			
-							col++;
-							if (col > strokecolor.length) {
-								col=0;
-								}
-						
-							var encodedPath = google.maps.geometry.encoding.encodePath(runPath.getPath());
-							encodedPath=encodedPath.replace(/\\/g, "\\\\");
-							var data =  {'encodedPath':encodedPath,
-										 'fitbiter':'{{fitdata.fitbiter}}',
-										 'fitroute':'{{fitroute.name}}'
-										 };
-				
-							//Django is returning a success variable but not sure how to see it
-							//$.getJSON("{% url 'savefitmappedrte-view' %}", data);					
-
-						
-							{% if forloop.first %}
-								var first_marker=latlongs[0];
-							{% endif %}
-							
-							//Display the route on the map
-							runPath.setMap(map);
-							
-							a=i;
-							b=j;
-							c=k;
-							z=0; 
-							latlongs=[];
-							latlongs[z]=stopSpot;
-							z=1;
-							dist=dist-distance;	
-							
+				{% if fitdata_all %} //Checks if new FitData
+					//Update the map with new data
+					var directionsService = new google.maps.DirectionsService();
+					var start = {lat: decodedPath[decodedPath.length-1].lat(), lng: decodedPath[decodedPath.length-1].lng()};
+					var end = {lat: {{fitroute.end.lat}}, lng: {{fitroute.end.long}}};
+					var waypts=[
+						{% for waypoint in waypoints %}
+							{location: new google.maps.LatLng({{waypoint.lat}},{{waypoint.long}}),stopover: true},
 						{% endfor %}
-						
-						//Make the map the size of the latest route
-						var last_marker=stopSpot;
-						var bounds=new google.maps.LatLngBounds();
-						bounds.extend(last_marker);
-						bounds.extend(first_marker);
-						map.fitBounds(bounds);
-					
-					} else {
-						console.log('Not OK');
-						}
-				
-				}); // Close Directions Service Route			
+								]; //waypts
 
+					var request = {
+							   origin: start,
+							   destination: end,
+							   waypoints: waypts,
+							   travelMode: 'WALKING'
+							  }; // Request	
+				
+					directionsService.route(request, function(result, status) {
+						if (status == 'OK') {
+							var a=0;
+							var b=0;
+							var c=0;
+							var dist=0;
+							var olddist=0;
+							var latlongs=[];
+							var z=0;
+							var strokecolor=["#0082c8","#3cb44b","#911eb4","#000080","#46f0f0#","#f58231","#f032e6","#e6beff"];
+							var col=0;
+							var order={{order}};
+						
+							{% for fitdata in fitdata_all %}
+						
+								//Convert route into polylines
+								var distance={{fitdata.distance}}*1000;
+								var legs=result.routes[0].legs; //legs are point to point
+								legs:
+								for (i = a; i < legs.length; i++) {
+									var steps = legs[i].steps; //steps are steps in each leg
+									steps:
+									for (j=b; j < steps.length; j++) {
+										var nextSegment = steps[j].path; //lat and long for each step
+										segments:
+										for (k=c; k < nextSegment.length; k++) {
+											latlongs[z]=nextSegment[k];  //latlongs holds array of lat and long for each step
+											if (z>0) {
+											olddist=dist;
+											dist+= google.maps.geometry.spherical.computeDistanceBetween(latlongs[z],latlongs[z-1]);
+											}
+											if (dist >= distance) {
+												break legs;
+											}
+											z++;
+
+										} //for k
+									c=0;
+									} // for j
+								b=0;
+								} // for i
+
+								//Find the exact point where the distance is met
+								//Finds the spot along the last polyline
+								var percentDist=(distance-olddist)/(dist-olddist);
+								var stopSpot = google.maps.geometry.spherical.interpolate(latlongs[z-1],latlongs[z],percentDist);
+								latlongs[z]=stopSpot;  
+
+								marker = new google.maps.Marker({
+									position: latlongs[0],
+									map: map
+									});
+
+								marker = new google.maps.Marker({
+									position: latlongs[z],
+									map: map
+									});
+
+								marker = new google.maps.Marker({
+									position: end,
+									map: map
+									});
+
+								var runPath= new google.maps.Polyline({
+									path: latlongs,
+									strokeColor: strokecolor[col],
+									strokeWeight:4
+								});
+			
+								col++;
+								if (col > strokecolor.length) {
+									col=0;
+									}
+						
+								var encodedPath = google.maps.geometry.encoding.encodePath(runPath.getPath());
+								encodedPath=encodedPath.replace(/\\/g, "\\\\");
+								var data =  {'encodedPath':encodedPath,
+											 'fitbiter':'{{fitdata.fitbiter}}',
+											 'fitroute':'{{fitroute.name}}',
+											 'strokecolor':strokecolor[col],
+											 'order':order,
+											 'num_complete_waypt':i
+											 };
+				
+								//Django is returning a success variable but not sure how to see it
+								$.getJSON("{% url 'savefitmappedrte-view' %}", data);					
+
+						
+								{% if forloop.first %}
+									var first_marker=latlongs[0];
+								{% endif %}
+							
+								//Display the route on the map
+								runPath.setMap(map);
+							
+								a=i;
+								b=j;
+								c=k;
+								z=0; 
+								latlongs=[];
+								latlongs[z]=stopSpot;
+								z=1;
+								dist=dist-distance;	
+								order=order+1;
+							
+							{% endfor %}
+						
+							//Make the map the size of the latest route
+							var last_marker=stopSpot;
+							var bounds=new google.maps.LatLngBounds();
+							bounds.extend(last_marker);
+							bounds.extend(first_marker);
+							map.fitBounds(bounds);
+					
+						} else {
+							console.log('Not OK');
+							}
+				
+					}); // Close Directions Service Route			
+				{% endif %} //Checks if new FitData
 			} //End of Display Route Function
 
 		</script>
@@ -207,9 +218,7 @@
   		
   		<h2>{{fitroute.name}}</h2>
   		<body onload="displayRoute()">
-  		{{ mappedrte_all }}
   		{{fitdata_all}}
-  		
   		<div id="map"></div>
   		
   	 </body>	

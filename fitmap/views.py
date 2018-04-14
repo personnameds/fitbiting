@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect
 from django.http import JsonResponse
 from datetime import datetime
 from django.views.generic import TemplateView
-from .models import FitRoute, FitMappedRte
+from .models import FitRoute, FitMappedRte, WayPoint
 from fitdata.models import FitData
 from fitdata.views import UpdateFitbitDataFunc
 from fitbiters.models import Fitbiter
@@ -37,10 +37,13 @@ class DisplayFitMapView(TemplateView):
 		latest_update=FitMappedRte.objects.filter(fitroute=fitroute).latest('date').date
 		fitdata=FitData.objects.filter(date__gte=latest_update, distance__gt=0)
 		mappedrte_all=FitMappedRte.objects.filter(fitroute=fitroute).order_by('order')
+		latest_order=FitMappedRte.objects.filter(fitroute=fitroute).latest('order').order
 		
+		context['order']=latest_order+1
 		context['fitdata_all']=fitdata
 		context['mappedrte_all'] = mappedrte_all
 		context['fitroute']=fitroute
+		context['waypoints']=fitroute.waypoints.all().order_by('order')[fitroute.num_complete_waypt:]
 		return context
 
 class StartMapView(TemplateView):
@@ -65,6 +68,7 @@ class StartMapView(TemplateView):
 		##Takes all data from today from all Fitbiters
 		context['fitdata_all']=FitData.objects.filter(date=date, distance__gt=0)
 		context['fitroute']=fitroute
+		context['waypoints']=fitroute.waypoints.all().order_by('order')
 		return context
  
 def SaveFitMappedRte(request):
@@ -73,25 +77,31 @@ def SaveFitMappedRte(request):
 	fitbiter_id=request.GET.get('fitbiter')
 	strokecolor=request.GET.get('strokecolor')
 	order=request.GET.get('order')
-	
-	
+	num_complete_waypt=int(request.GET.get('num_complete_waypt'))
+
 	fitroute=FitRoute.objects.get(name=fitroute_name)
 	fitbiter=Fitbiter.objects.get(fitbit_id=fitbiter_id)
 	date_today=datetime.today().date()
-	
 
-	##if FitMappedRte.objects.filter(fitroute=fitroute, fitbiter=fitbiter, date=date_today).exists():
-	##	fitmappedrte=FitMappedRte.objects.get(fitroute=fitroute, fitbiter=fitbiter, date=date_today)
-	##	fitmappedrte.maprtedata=encodedPath
-	##else:
-	fitmappedrte=FitMappedRte(fitroute=fitroute,
+	fitroute.num_complete_waypt=num_complete_waypt
+	fitroute.save()
+
+	if FitMappedRte.objects.filter(fitroute=fitroute,fitbiter=fitbiter,date=date_today).exists():
+		fitmappedrte=FitMappedRte.objects.get(fitroute=fitroute, fitbiter=fitbiter, date=date_today)
+		fitmappedrte.maprtedata=encodedPath
+		fitmappedrte.colour=strokecolor
+		fitmappedrte.order=order
+	else:
+		##Save the Mapped Route for that fitbiter and fitroute
+		fitmappedrte=FitMappedRte(fitroute=fitroute,
 							fitbiter=fitbiter,
 							date=date_today,
 							maprtedata=encodedPath,
 							colour=strokecolor,
 							order=order,
 						)
-	fitmappedrte.save()
+		fitmappedrte.save()
+	
 	return JsonResponse({'response':'success'}) ##returned by not captured, not sure what happens with it?
 
 

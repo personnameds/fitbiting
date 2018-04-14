@@ -30,15 +30,15 @@
 				var start = {lat: {{fitroute.start.lat}}, lng: {{fitroute.start.long}}};
 				var end = {lat: {{fitroute.end.lat}}, lng: {{fitroute.end.long}}};
 				var waypts=[
-					{% for waypoint in fitroute.waypoints.all %}
-						{location: new google.maps.LatLng({{waypoint.lat}},{{waypoint.long}}),stopover: true}
+					{% for waypoint in waypoints %}
+						{location: new google.maps.LatLng({{waypoint.lat}},{{waypoint.long}}),stopover: true},
 					{% endfor %}
 							]; //waypts
 
 				var request = {
 						   origin: start,
 						   destination: end,
-						   //waypoints: waypts,
+						   waypoints: waypts,
 						   travelMode: 'WALKING'
 						  }; // Request		
 						  		
@@ -56,13 +56,14 @@
 						var marker;
 						var strokecolor=["#0082c8","#3cb44b","#911eb4","#000080","#46f0f0#","#f58231","#f032e6","#e6beff"];
 						var col=0;
-						var order=0;
+						var order=1;
 						
 						{% for fitdata in fitdata_all %}
-						
+			
 							//Convert route into polylines
 							var distance={{fitdata.distance}}*1000;
 							var legs=result.routes[0].legs; //legs are point to point
+							
 							legs:
 							for (i = a; i < legs.length; i++) {
 								var steps = legs[i].steps; //steps are steps in each leg
@@ -71,10 +72,13 @@
 									var nextSegment = steps[j].path; //lat and long for each step
 									segments:
 									for (k=c; k < nextSegment.length; k++) {
+										console.log('leg#:'+i+' of '+legs.length+' step#:'+j+' of '+steps.length+' segment#:'+k+' of '+nextSegment.length);
+										//console.log(i+' '+j+' '+k);
 										latlongs[z]=nextSegment[k];  //latlongs holds array of lat and long for each step
 										if (z>0) {
 										olddist=dist;
 										dist+= google.maps.geometry.spherical.computeDistanceBetween(latlongs[z],latlongs[z-1]);
+									
 										}
 										if (dist >= distance) {
 											break legs;
@@ -82,9 +86,17 @@
 										z++;
 
 									} //for k
+								c=0; //need to go back to zero as you don't want to keep restarting in same position
 								} // for j
+							b=0; //need to go back to zero as you don't want to keep restarting in same position
 							} // for i
-				
+							
+							if (i == legs.length) {
+								console.log('finished');
+								console.log(i+' '+j+' '+k);
+								console.log(legs.length);
+								}
+							
 							//Find the exact point where the distance is met
 							//Finds the spot along the last polyline
 							var percentDist=(distance-olddist)/(dist-olddist);
@@ -100,12 +112,12 @@
 								position: latlongs[z],
 								map: map
 								});
-/*							
+							
 							marker = new google.maps.Marker({
-								position: new google.maps.LatLng({{fitroute.waypoints.all.0.lat}},{{fitroute.waypoints.all.0.long}}),
+								position: end,
 								map: map
 								});
-*/							
+							
 							var runPath= new google.maps.Polyline({
 								path: latlongs,
 								strokeColor: strokecolor[col],
@@ -123,11 +135,13 @@
 										 'fitbiter':'{{fitdata.fitbiter}}',
 										 'fitroute':'{{fitroute.name}}',
 										 'strokecolor':strokecolor[col],
-										 'order':order
+										 'order':order,
+										 'num_complete_waypt':i
 										 };
 				
 							//Django is returning a success variable but not sure how to see it
-							//$.getJSON("{% url 'savefitmappedrte-view' %}", data);					
+							//console.log('waypts'+i);
+							$.getJSON("{% url 'savefitmappedrte-view' %}", data);					
 
 						
 							{% if forloop.first %}
@@ -137,6 +151,7 @@
 							//Display the route on the map
 							runPath.setMap(map);
 							
+							//a b c are saved so that it restarts the loops in the position it left
 							a=i;
 							b=j;
 							c=k;
@@ -145,8 +160,8 @@
 							latlongs[z]=stopSpot;
 							z=1;
 							dist=dist-distance;
-							order=order+1;	
-							
+							order=order+1;
+							//console.log('switch'+' a:'+a+' b:'+b+' c:'+c);
 						{% endfor %}
 						
 						//Make the map the size of the latest route
