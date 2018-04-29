@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+  	<head>
+    	<title>Routes</title>
+  	</head>
+  	
+  	<body>	
+		<h3><a href="{% url 'homepage-index' %}">Homepage</a></h3>
+		<h3><a href="{% url 'admin:index' %}">Admin</a></h3>  
+		
+		<p>Update route or create new one </p>
+		<form action="" method="post">{% csrf_token %}
+    		{{ form.as_p }}
+   		 	<input type="submit" value="Update Existing Route" name="update"/>
+   		 	<input type="submit" value="Create New Route" name="create"/>
+		</form>
+		
+	</body>
+</html>

@@ -14,10 +14,12 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.urls import path
-from fitmap.views import FitMapIndex, StartMapView, SaveFitMappedRte, DisplayFitMapView
+from fitmap.views import FitMapIndex, StartMapView, SaveFitMappedRte, DisplayFitMapView, CreateRouteView
 
 urlpatterns = [
-	path('', FitMapIndex, name='fitmap-index'),
+	path('', FitMapIndex.as_view(), name='fitmap-index'),
+	path('createroute', CreateRouteView.as_view(), name='createroute-view'),
+	
 	path('displaymap/', DisplayFitMapView.as_view(), name='display-fitmap-view'),
 	path('startmap/', StartMapView.as_view(), name='startmap-view'),
     path('savemap/', SaveFitMappedRte, name='savefitmappedrte-view'),

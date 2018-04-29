@@ -1,20 +1,36 @@
 from django.shortcuts import render, redirect
 from django.http import JsonResponse
 from datetime import datetime
+
 from django.views.generic import TemplateView
+from django.views.generic.edit import FormView
+
 from .models import FitRoute, FitMappedRte, WayPoint
 from fitdata.models import FitData
+
+from .forms import FitMapForm
+
+from django.forms import formset_factory
+
 from fitdata.views import UpdateFitbitDataFunc
 from fitbiters.models import Fitbiter
 from datetime import datetime
 
-def FitMapIndex(request):
-	##I could use a view here to choose routes
-	fitroute=FitRoute.objects.get(name="Sudeep to Neel")
-	if FitMappedRte.objects.filter(fitroute=fitroute).exists():
-		return redirect('display-fitmap-view')
-	else:
-		return redirect('startmap-view')
+class FitMapIndex(FormView):
+	template_name='fitmap/fitmap_form.html'
+	form_class=FitMapForm
+	
+	def form_valid(self, form):
+		if 'create' in self.request.POST:
+			return redirect('createroute-view')
+		else:
+			z=UpdateRoute
+			
+class CreateRouteView(TemplateView):
+	template_name='fitmap/createmap.html'
+
+		
+
 
 class DisplayFitMapView(TemplateView):
 	template_name="fitmap/displayfitmap.html"

@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+  	<head>
+    	<title>Choose Fitbit Data</title>
+  	</head>
+  	
+  	<body>	
+		<h3><a href="{% url 'homepage-index' %}">Homepage</a></h3>
+		<h3><a href="{% url 'admin:index' %}">Admin</a></h3>  
+		
+		<p>Choose either a route or people</p>
+		<form action="" method="post">{% csrf_token %}
+    		{{ form.as_p }}
+   		 	<input type="submit" value="Show Distance Data" />
+		</form>
+		
+	</body>
+</html>

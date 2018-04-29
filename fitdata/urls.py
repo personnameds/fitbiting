@@ -14,8 +14,9 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.urls import path
-from fitdata.views import FitDataIndexView
+from fitdata.views import FitDataIndexView, FitDataDisplayView
 
 urlpatterns = [
 	path('', FitDataIndexView.as_view(), name='fitdata-index'),
+	path('displaydata/<str:data_type>/<str:ids>/', FitDataDisplayView.as_view(), name='fitdata-display'),
 ]

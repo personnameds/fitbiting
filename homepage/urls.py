@@ -14,9 +14,8 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.urls import path
-from homepage.views import HomepageView, StarView
+from homepage.views import HomepageView
 
 urlpatterns = [
     path('', HomepageView.as_view(), name='homepage-index'),
-    path('star/', StarView.as_view(), name='star-index'),
 ]
