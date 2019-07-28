@@ -5,3 +5,4 @@ CLIENT_SECRET
 settings_local.py
 *.pyc
 localfitbitdb.sqlite3
+API_KEY

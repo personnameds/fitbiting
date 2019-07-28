@@ -21,7 +21,6 @@
 		</style>
 	</head>
 	<body>
-
   		<a href="{% url 'homepage-index' %}">Homepage</a>
 		<a href="{% url 'admin:index' %}">Admin</a>
 		<a href="{% url 'fitdata-index' %}">Fitbit Data</a>
@@ -222,11 +221,8 @@
 					}); // Close Directions Service Route			
 				{% endif %} //Checks if new FitData
 			} //End of Display Route Function
-
-
 		</script>
-
-    	<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCGj9lv67pbSIpSh-sZUGCINHE-3H5r_Z8&libraries=geometry&places&callback=displayRoute" async defer></script>
+    	<script src="https://maps.googleapis.com/maps/api/js?key={{API_KEY}}&libraries=geometry&places&callback=displayRoute" async defer></script>
 		<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
 	
   	 </body>	

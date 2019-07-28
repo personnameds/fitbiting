@@ -25,6 +25,10 @@ SECRET_DIRECTORY=os.path.join(BASE_DIR,'fitbiting')+'/SECRET_KEY'
 with open(SECRET_DIRECTORY) as f:
     SECRET_KEY = f.read().strip()
 
+SECRET_DIRECTORY=os.path.join(BASE_DIR,'fitbiting')+'/API_KEY'
+with open(SECRET_DIRECTORY) as f:
+    API_KEY = f.read().strip()
+
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 

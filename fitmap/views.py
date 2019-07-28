@@ -16,6 +16,7 @@ from .forms import FitMapForm, CreateRouteForm_MapDetails
 from fitdata.views import UpdateFitbitDataFunc
 from fitbiters.models import Fitbiter
 
+from django.conf import settings
 
 ##Update a map or create a new map
 class FitMapIndex(FormView):
@@ -38,13 +39,6 @@ class CreateRouteFormView(FormView):
 	template_name='fitmap/createmap_form.html'
 	success_url='/'
 	
-	def get_initial(self):
-		initial=super().get_initial()
-		initial['title']='Sudeep to Neel'
-		initial['start']='30 Elsie Lane'
-		initial['end']='2182 Meadowglen Drive'
-		return initial
-
 	def get_context_data(self, **kwargs):
 		context = super().get_context_data(**kwargs)
 
@@ -57,6 +51,7 @@ class CreateRouteFormView(FormView):
 		date=datetime.now()
 		
 		context['fitdata_all']=FitData.objects.filter(date=date, distance__gt=0)
+		context['API_KEY']=settings.API_KEY
 		return context
 		
 	
@@ -88,6 +83,9 @@ def CreateRoute_SaveMappedRoute(request):
 	order=request.GET.get('order')
 	num_complete_waypt=int(request.GET.get('num_complete_waypt'))
 
+
+	##Can't use title to get route object
+	##Conflicts if duplicate
 	fitroute=FitRoute.objects.get(title=fitroute_title)
 	fitbiter=Fitbiter.objects.get(fitbit_id=fitbiter_id)
 	date_today=datetime.today().date()
@@ -139,6 +137,7 @@ class DisplayFitMapView(TemplateView):
 		context['mappedrte_all'] = mappedrte_all
 		context['fitroute']=fitroute
 		#context['waypoints']=fitroute.waypoints.all().order_by('order')[fitroute.num_complete_waypt:]
+		context['API_KEY']=settings.API_KEY
 		return context
 
 
