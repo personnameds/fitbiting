@@ -17,35 +17,23 @@
 		  	function drawLineGraph() {
 				
 				//Create the data table
-				var data = new google.visualization.DataTable();
-				data.addColumn('date', 'Date');
-				
-				{% for fitbiter in fitbiters %}
-					data.addColumn('number', '{{fitbiter.fitbit_id}}');
-				{% endfor %}
-				
-				{% for data_row in all_data %}
-					data.addRows([
-						[
-						new Date('{{data_row.0}}'),
-						{% for data in data_row|slice:"1:" %}
-							{{data}},
-						{% endfor %}
-						],
-					]);
-				{% endfor %}
+				 var data = google.visualization.arrayToDataTable([
+					 ['Date', '{{fitbiter}}'],
+					 {% for data in data_table %}
+					 	['{{data.date}}',{{data.distance}}],
+					 {% endfor %}
+				  ]);
 				
 				var options = {
-			  		title: 'Last Five Days',
-			  		legend: { position: 'bottom' }
+			  		title: "I'll figure that out later",
 					};
-
+				
+				// Instantiate and draw the chart.
 				var chart = new google.visualization.LineChart(document.getElementById('chart_div'));
 
 				chart.draw(data, options);
 		  	}
 		  </script>
-    		
     		
   	</head>
   	<body>	

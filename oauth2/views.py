@@ -4,6 +4,7 @@ from fitbiters.models import Fitbiter
 from fitdata.models import FitData
 from django.conf import settings
 from django.db import IntegrityError
+from django.urls import reverse
 
 import requests #need to install this library
 
@@ -13,40 +14,17 @@ import json
 
 import os
 
-
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-
-
-CLIENT_DIRECTORY=os.path.join(BASE_DIR,'fitbiting')+'/CLIENT_ID'
-with open(CLIENT_DIRECTORY) as f:
-    CLIENT_ID = f.read().strip()
-
-CLIENT_DIRECTORY=os.path.join(BASE_DIR,'fitbiting')+'/CLIENT_SECRET'
-with open(CLIENT_DIRECTORY) as f:
-    CLIENT_SECRET = f.read().strip()
-
-
-client_id=CLIENT_ID
-client_secret=CLIENT_SECRET
-
-token_url='https://api.fitbit.com/oauth2/token'
-
-
 def GetFitbitData(fitbiter):
-	
 	data=GetDataUsingAccessToken(fitbiter) 
 	return data
     
-
 def GetDataUsingAccessToken(fitbiter):
 
-	try: 
-		last_date=FitData.objects.filter(fitbiter=fitbiter).latest('date').date
-		FitData.objects.filter(fitbiter=fitbiter, date=last_date).delete()
-		last_date=last_date.strftime("%Y-%m-%d")
-		FitbitURL='https://api.fitbit.com/1/user/'+fitbiter.fitbit_id+'/activities/distance/date/'+last_date+'/today.json'
-	except IndexError:
-		FitbitURL='https://api.fitbit.com/1/user/'+fitbiter.fitbit_id+'/activities/distance/date/today/1d.json'
+	last_date=FitData.objects.filter(fitbiter=fitbiter).latest('date').date
+	FitData.objects.filter(fitbiter=fitbiter, date=last_date).delete()
+	last_date=last_date.strftime("%Y-%m-%d")
+	FitbitURL='https://api.fitbit.com/1/user/'+fitbiter.fitbit_id+'/activities/distance/date/'+last_date+'/today.json'
+
  	
 	req=urllib.request.Request(FitbitURL)
 	req.add_header('Authorization', 'Bearer ' + fitbiter.access_token)
@@ -113,13 +91,29 @@ def GetNewAccessandRefreshToken(fitbiter):
 
 	GetDataUsingAccessToken(fitbiter)
 
-
+##New User
 def Oauth2View(request):
 	authorize_url='https://www.fitbit.com/oauth2/authorize?response_type=code&client_id=22CVHF&redirect_uri=http%3A%2F%2Flocalhost%3A8000%2Foauth2%2Foauth2callback&scope=activity&expires_in=604800'
 	return HttpResponseRedirect(authorize_url)
 
-
 def Oauth2CallBackView(request):
+	
+	BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+
+	CLIENT_DIRECTORY=os.path.join(BASE_DIR,'fitbiting')+'/CLIENT_ID'
+	with open(CLIENT_DIRECTORY) as f:
+		CLIENT_ID = f.read().strip()
+
+	CLIENT_DIRECTORY=os.path.join(BASE_DIR,'fitbiting')+'/CLIENT_SECRET'
+	with open(CLIENT_DIRECTORY) as f:
+		CLIENT_SECRET = f.read().strip()
+
+	client_id=CLIENT_ID
+	client_secret=CLIENT_SECRET
+
+	token_url='https://api.fitbit.com/oauth2/token'
+	
 	code=request.GET.get('code')
 	
 	##To Get Access and Refresh Token
@@ -153,24 +147,35 @@ def Oauth2CallBackView(request):
 		print(e.code)
 		print(e.read())
 		
-
 	## Access and Refresh Token Received
 	## Saving tokens to model
 	ResponseJSON = json.loads(FullResponse)
 
-	fitbit_id=str(ResponseJSON['user_id'])
-
-	if Fitbiter.objects.filter(fitbit_id=fitbit_id).exists():
-		return redirect('fitdata-index')
-		##return redirect('getfitdata-view', fitbiter=Fitbiter.objects.get(fitbit_id=fitbit_id))
-	else:
-		fitbiter=Fitbiter(fitbit_id=fitbit_id,
-				          access_token=str(ResponseJSON['access_token']),
-					  	  refresh_token=str(ResponseJSON['refresh_token']),
-					      )
-		fitbiter.save()
+	fitbiter=Fitbiter(fitbit_id=str(ResponseJSON['user_id']),
+					  access_token=str(ResponseJSON['access_token']),
+					  refresh_token=str(ResponseJSON['refresh_token']),
+					  )
+	fitbiter.save()
 	
-	##Used to get data immediately
-	##return redirect('getfitdata-view', fitbiter=fitbiter.fitbit_id)
-	##now goes to fitdata index and downloads data... I think
-	return redirect('fitdata-index') 
+	##Get Initial FitbitData
+	FitbitURL='https://api.fitbit.com/1/user/'+fitbiter.fitbit_id+'/activities/distance/date/today/7d.json'
+ 	
+	req=urllib.request.Request(FitbitURL)
+	req.add_header('Authorization', 'Bearer ' + fitbiter.access_token)
+	
+	response=urllib.request.urlopen(req)
+	FullResponse=response.read()
+	ResponseJSON = json.loads(FullResponse)
+	
+
+	activity_data=ResponseJSON
+	distance_by_date=activity_data['activities-distance']
+	for i in distance_by_date:
+		fitdata=FitData(fitbiter=fitbiter,
+				date=i['dateTime'],
+				distance=i['value'],
+				)
+		fitdata.save()
+	
+	#Displays the fitbiters data
+	return redirect(reverse('fitdata-display', kwargs={'fitbiter_id':fitbiter.fitbit_id}))

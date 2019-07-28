@@ -1,4 +1,4 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import redirect
 from django.urls import reverse
 from django.http import HttpResponseRedirect
 
@@ -17,20 +17,13 @@ import datetime
 class FitDataIndexView(FormView):
 	template_name='fitdata/fitdata_form.html'
 	form_class=FitDataForm
-	
+
 	def form_valid(self, form):
-		self.form = form
+		self.fitbiter = form.cleaned_data['fitbiters']
 		return HttpResponseRedirect(self.get_success_url())
 		
 	def get_success_url(self):
-		if self.form.cleaned_data['all_fitbiters']:
-			return reverse('fitdata-display', kwargs={'data_type':'fitbiters', 'ids':'all'})
-		elif self.form.cleaned_data['fitbiters']:
-			fitbiters=",".join(str(f.id) for f in self.form.cleaned_data['fitbiters'])
-			return reverse('fitdata-display', kwargs={'data_type':'fitbiters', 'ids':fitbiters})
-		elif self.form.cleaned_data['routes']:
-			route_id=self.form.cleaned_data['routes'].id
-			return reverse('fitdata-display', kwargs={'data_type':'route', 'ids':route_id})
+		return reverse('fitdata-display', kwargs={'fitbiter_id':self.fitbiter})
 		
 ##Downloads data from Fitbit
 ##Also updates keys etc.	
@@ -53,35 +46,19 @@ class FitDataDisplayView(TemplateView):
 		context = super().get_context_data(**kwargs)
 		
 		##Retrieves what data needs to be displayed based on Form from FitDataIndex
-		data_type=kwargs['data_type']
-		ids=kwargs['ids']
+		fitbiter_id=kwargs['fitbiter_id']
 		
-		if data_type=='fitbiters':
-			if ids=='all':
-				fitbiters=Fitbiter.objects.all()
-			else:
-				ids=ids.split(',')
-				fitbiters=Fitbiter.objects.filter(pk__in=ids)
-		elif data_type=='route':
-			fitroute=FitRoute.objects.get(pk__in=ids)
-			ids=FitMappedRte.objects.filter(fitroute=fitroute).values_list('fitbiter', flat=True)
-			fitbiters=Fitbiter.objects.filter(pk__in=ids)
-		
+		#Only sending single fitbiter but will work for multiple
+		fitbiters=Fitbiter.objects.filter(fitbit_id=fitbiter_id)
+
 		##Based on data displays calls the UpdateFitbitData Function
 		UpdateFitbitDataFunc(fitbiters)
 		
-		##Works up to here
-		five_latest_dates=[]##[datetime.datetime.today()]		
-		for i in range(5,-1,-1):
-			five_latest_dates.append(datetime.datetime.today()-datetime.timedelta(days=i))
-		
-		all_data=[]
-		for date in five_latest_dates:
-			fitbiter_data=[date.date()]
-			for fitbiter in fitbiters:
-				fitbiter_data.append(FitData.objects.get(fitbiter=fitbiter, date=date).distance)
-			all_data.append(fitbiter_data)
+		##Works only for 1 fitbiter at a time!
+		for fitbiter in fitbiters:
+			data_table=FitData.objects.filter(fitbiter=fitbiter).order_by('-date')[:5]
 
-		context['all_data']=all_data
-		context['fitbiters'] = fitbiters
+
+		context['fitbiter']=fitbiters[0]
+		context['data_table']=data_table
 		return context
