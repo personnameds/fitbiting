@@ -9,5 +9,5 @@ class CreateRouteForm_MapDetails(forms.Form):
 	title=forms.CharField(max_length=50, widget=forms.TextInput(attrs={'id':"title"}))
 	start=forms.CharField(max_length=250, widget=forms.TextInput(attrs={'id':"start"}))
 	end=forms.CharField(max_length=250, widget=forms.TextInput(attrs={'id':"end"}))
-	
+	fitbiters=forms.ModelMultipleChoiceField(queryset=Fitbiter.objects.all(), widget=forms.CheckboxSelectMultiple(attrs={'id':'fitbiter'}))
 	

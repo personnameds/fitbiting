@@ -1,0 +1,32 @@
+Create Route should use Django Form Validation
+	As you choose Start and End it populates
+	Click save, validates, saves and goes to display page
+
+Conflict with creating 2 routes with same name, routes need to identified by id not title
+
+Upload for Beta Testing
+
+Display route choices based on who is logged in
+
+FitData, change graph date direction
+
+Front End
+
+Share data, charts, graphs of who ran what, percentage etc
+
+Add labels to map
+
+Create map using mouse drag
+Streamline and minimize Google Api usage
+Streamline and ensure accuracy of calculations, do it myself
+	Use Distance for each step which is embedded in Directions API for distance calculations 
+	https://developers.google.com/maps/documentation/directions/intro#DirectionsResponses
+
+Finish Finish Route
+
+Security and Login 
+	Tie Fitbit Data to Login 
+	
+Colour Choice for Fitbiters
+
+Create route make choosing of Fitbiters Dynamic
