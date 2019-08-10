@@ -1,10 +1,8 @@
-Create Route should use Django Form Validation
-	As you choose Start and End it populates
-	Click save, validates, saves and goes to display page
-
-Conflict with creating 2 routes with same name, routes need to identified by id not title
-
 Upload for Beta Testing
+
+Check FitMappedRte with Day 2 of Data
+
+Check Marker
 
 Display route choices based on who is logged in
 
@@ -28,5 +26,10 @@ Security and Login
 	Tie Fitbit Data to Login 
 	
 Colour Choice for Fitbiters
+	More then 8 runners will give error for stroke colour choice in creat4
 
 Create route make choosing of Fitbiters Dynamic
+
+How much does it cost on Google API
+	How many API calls does Create make
+	How many API calls does Display make

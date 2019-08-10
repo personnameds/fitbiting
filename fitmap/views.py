@@ -3,12 +3,12 @@ from django.urls import reverse
 from django.http import HttpResponseRedirect
 
 from django.http import JsonResponse
-from datetime import datetime
+from datetime import date, datetime
 
 from django.views.generic import TemplateView
 from django.views.generic.edit import FormView
 
-from .models import FitRoute, FitMappedRte
+from .models import FitRoute, FitMappedRte, FitRunner
 from fitdata.models import FitData
 
 from .forms import FitMapForm, CreateRouteForm_MapDetails
@@ -17,6 +17,8 @@ from fitdata.views import UpdateFitbitDataFunc
 from fitbiters.models import Fitbiter
 
 from django.conf import settings
+
+from django.core.exceptions import ObjectDoesNotExist
 
 ##Update a map or create a new map
 class FitMapIndex(FormView):
@@ -31,56 +33,57 @@ class FitMapIndex(FormView):
 			return HttpResponseRedirect(self.get_success_url())
 		
 	def get_success_url(self):
-		return reverse('displayroute', kwargs={'fitroute':self.fitroute})
+		return reverse('displayroute', kwargs={'fitroute':self.fitroute.pk})
 			
 
 class CreateRouteFormView(FormView):
 	form_class=CreateRouteForm_MapDetails
 	template_name='fitmap/createmap_form.html'
-	success_url='/'
-	
-	def get_initial(self):
-		initial = super(CreateRouteFormView, self).get_initial()
-
-		initial['title'] = 'Sudeep to Parents'
-		initial['start']='30 Elsie Lane'
-		initial['end']='376 Simonston Blvd'
-
-		return initial
 	
 	def get_context_data(self, **kwargs):
 		context = super().get_context_data(**kwargs)
 
-		#Update all fitbit data for all users
-		#Later this should only include fitbiters known to this person
-		fitbiters=Fitbiter.objects.all()
-		UpdateFitbitDataFunc(fitbiters)
-		
-		#Starting data will be from today 
-		date=datetime.now()
-		
-		context['fitdata_all']=FitData.objects.filter(date=date, distance__gt=0)
 		context['API_KEY']=settings.API_KEY
 		return context
+	
+	def form_valid(self, form):
+		strokecolor=["#0082c8","#3cb44b","#911eb4","#000080","#46f0f0#","#f58231","#f032e6","#e6beff"]
 		
+		title=form.cleaned_data['title']
+
+		start_lat=form.cleaned_data['start_lat']
+		start_long=form.cleaned_data['start_long']
+		end_lat=form.cleaned_data['end_lat']
+		end_long=form.cleaned_data['end_long']
+		
+		fitbiters = form.cleaned_data['fitbiters']
+
+		fitroute=FitRoute(title=title,
+			start_lat=start_lat,
+			start_long=start_long,
+			end_lat=end_lat,
+			end_long=end_long,
+			last_update=date.today(),
+			)
+		fitroute.save()
+		
+		i=0;
+		for fitbiter in fitbiters:
+			fitrunner=FitRunner(fitbiter=fitbiter, 
+					   			colour=strokecolor[i],
+					   			fitroute=fitroute,
+					   			)
+			fitrunner.save()
+			i += 1
+					
+		self.fitroute=fitroute
+
+
+		return super().form_valid(form)
 	
-def CreateRoute_SaveRoute(request):
-	title=request.GET.get('title')
-	start_lat=request.GET.get('start_lat')
-	start_long=request.GET.get('start_long')
-	end_lat=request.GET.get('end_lat')
-	end_long=request.GET.get('end_long')	
-	
-	fitroute=FitRoute(title=title,
-		start_lat=start_lat,
-		start_long=start_long,
-		end_lat=end_lat,
-		end_long=end_long,
-		)
-	fitroute.save()
-	
-	## I don't actually do anything with this success
-	return JsonResponse({'response':'success'})	
+	def get_success_url(self):
+		return reverse('displayroute', kwargs={'fitroute':self.fitroute.pk})
+			
 
 class DisplayRouteTemplateView(TemplateView):
 	template_name="fitmap/displayfitmap.html"
@@ -88,30 +91,36 @@ class DisplayRouteTemplateView(TemplateView):
 	def get_context_data(self, **kwargs):
 		context = super().get_context_data(**kwargs)
 		
-		fitroute=FitRoute.objects.get(title=kwargs['fitroute'])
+		fitroute=FitRoute.objects.get(pk=kwargs['fitroute'])
+		fitrunners=FitRunner.objects.filter(fitroute=fitroute)
 
-		#Update all fitbit data for all users
-		#Later this should be only for user involved in this route
-		fitbiters=Fitbiter.objects.all()
-		UpdateFitbitDataFunc(fitbiters)			
+		last_update=fitroute.last_update
+		fitroute.last_update=date.today()
+		fitroute.save()
+
+		fitbiters=[]
+		fitdata_list=[]
 		
-##Gets from all users, later should be only for users involved in routes
+		for fitrunner in fitrunners:
+			UpdateFitbitDataFunc(fitrunner.fitbiter)
+			##Get FitData from last update
+			##Includes last_update, because needs to redo that in case more distance was added later that day
+			##If last_update is today, will overwrite and update distance data as it changes
+			##If route created today will also catch and begin to save distance data
+			fitdata=FitData.objects.get(fitbiter=fitrunner.fitbiter, date__gte=last_update)
+			fitdata_list.append((fitrunner, fitdata)) 
+			
 		
-		last_update=FitMappedRte.objects.filter(fitroute=fitroute).latest('date').date
-		
-		##Get FitData from last update
-		##Includes last_update, because needs to redo that in case more distance was added later that day
-		##If last_update is today, will overwrite and update distance data as it changes
-		##If route created today will also catch and begin to save distance data
-		fitdata=FitData.objects.filter(date__gte=last_update, distance__gt=0)
-		
-		##Gets all mapped rtes
+		##Need to check this and rewrite!
+		##Gets all mapped rtes, except the initial
 		mappedrte_all=FitMappedRte.objects.filter(fitroute=fitroute,date__lt=last_update).order_by('order')
+		if mappedrte_all:
+			last_order_num=mappedrte_all.objects.latest('order')
+		else:
+			last_order_num=0
 		
-		last_order_num=FitMappedRte.objects.filter(fitroute=fitroute).latest('order').order
-		
-		context['order']=last_order_num+1
-		context['fitdata_all']=fitdata
+		context['order']=last_order_num
+		context['fitdata_list']=fitdata_list
 		context['mappedrte_all'] = mappedrte_all
 		context['fitroute']=fitroute
 		#context['waypoints']=fitroute.waypoints.all().order_by('order')[fitroute.num_complete_waypt:]
@@ -121,45 +130,35 @@ class DisplayRouteTemplateView(TemplateView):
 #Used for creating a route and displaying a route
 def SaveMappedRoute(request):
 	encodedPath=request.GET.get('encodedPath')
-	fitroute_title=request.GET.get('fitroute')
-	fitbiter_id=request.GET.get('fitbiter')
+	fitroute_pk=request.GET.get('fitroute')
+	fitrunner_pk=request.GET.get('fitrunner')
 	strokecolor=request.GET.get('strokecolor')
 	data_date=request.GET.get('date')
 	order=request.GET.get('order')
+	order=order+1 ##increment order number before saving
 	#num_complete_waypt=int(request.GET.get('num_complete_waypt'))
 	
-	##Can't use title to get route object
-	##Conflicts if duplicate
-	fitroute=FitRoute.objects.get(title=fitroute_title)
-	
-	
-	fitbiter=Fitbiter.objects.get(fitbit_id=fitbiter_id)
-	
-	#Checks if this is a route that is just being created
-	if data_date == 'initial':
-		data_date=datetime.today().date()
-	else:
-		data_date=datetime.strptime(data_date, '%b. %d, %Y')
 
-	#fitroute.num_complete_waypt=num_complete_waypt
-	fitroute.save()
+	fitroute=FitRoute.objects.get(pk=fitroute_pk)	
+	fitrunner=FitRunner.objects.get(pk=fitrunner_pk)
+	
+	##Data date is the date this fitbit data is from, may be different then actual date
+	data_date=datetime.strptime(data_date, '%b. %d, %Y')
 
-	if FitMappedRte.objects.filter(fitroute=fitroute,fitbiter=fitbiter,date=data_date).exists(): ##If exists then need to update distance
-		fitmappedrte=FitMappedRte.objects.get(fitroute=fitroute, fitbiter=fitbiter, date=data_date)
+	if FitMappedRte.objects.filter(fitroute=fitroute,fitrunner=fitrunner,date=data_date).exists(): ##If exists then need to update distance
+		fitmappedrte=FitMappedRte.objects.get(fitroute=fitroute, fitrunner=fitrunner, date=data_date)
 		fitmappedrte.maprtedata=encodedPath
-		##Nothing should change but the distance
-		##fitmappedrte.colour=strokecolor
+		## Order number should not change
 		##fitmappedrte.order=order				
 	else:
 		##Save the Mapped Route for that fitbiter and fitroute
 		fitmappedrte=FitMappedRte(fitroute=fitroute,
-							fitbiter=fitbiter,
+							fitrunner=fitrunner,
 							date=data_date,
 							maprtedata=encodedPath,
-							colour=strokecolor,
 							order=order,
 						)
-		fitmappedrte.save()
+	fitmappedrte.save()
 	
 	return JsonResponse({'response':'success'}) ##returned by not captured, not sure what happens with it?
 

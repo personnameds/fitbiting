@@ -27,17 +27,16 @@ class FitDataIndexView(FormView):
 		
 ##Downloads data from Fitbit
 ##Also updates keys etc.	
-def UpdateFitbitDataFunc(fitbiters):
-	for fitbiter in fitbiters:
-		activity_data=GetFitbitData(fitbiter)
-		distance_by_date=activity_data['activities-distance']
-		for i in distance_by_date:
-			fitdata=FitData(fitbiter=fitbiter,
-					date=i['dateTime'],
-					distance=i['value'],
-					)
-			fitdata.save()
-	return;
+def UpdateFitbitDataFunc(fitbiter):
+	activity_data=GetFitbitData(fitbiter)
+	distance_by_date=activity_data['activities-distance']
+	for i in distance_by_date:
+		fitdata=FitData(fitbiter=fitbiter,
+				date=i['dateTime'],
+				distance=i['value'],
+				)
+		fitdata.save()
+	return
 
 class FitDataDisplayView(TemplateView):
 	template_name="fitdata/fitdata_display.html"
