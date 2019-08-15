@@ -2,6 +2,7 @@ venv/
 SECRET_KEY
 CLIENT_ID
 CLIENT_SECRET
+REDIRECT_URI
 settings_local.py
 *.pyc
 localfitbitdb.sqlite3

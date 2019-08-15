@@ -83,7 +83,9 @@ class CreateRouteFormView(FormView):
 	
 	def get_success_url(self):
 		return reverse('displayroute', kwargs={'fitroute':self.fitroute.pk})
-			
+
+def takeThird(elem):
+	return elem[2]		
 
 class DisplayRouteTemplateView(TemplateView):
 	template_name="fitmap/displayfitmap.html"
@@ -107,15 +109,17 @@ class DisplayRouteTemplateView(TemplateView):
 			##Includes last_update, because needs to redo that in case more distance was added later that day
 			##If last_update is today, will overwrite and update distance data as it changes
 			##If route created today will also catch and begin to save distance data
-			fitdata=FitData.objects.get(fitbiter=fitrunner.fitbiter, date__gte=last_update)
-			fitdata_list.append((fitrunner, fitdata)) 
-			
+			fitdata=FitData.objects.filter(fitbiter=fitrunner.fitbiter, date__gte=last_update).order_by('-date')
+			for f in fitdata:
+				fitdata_list.append((f.date, fitrunner, f)) 
 		
+		fitdata_list.sort(key=lambda x:x[0])
+
 		##Need to check this and rewrite!
 		##Gets all mapped rtes, except the initial
 		mappedrte_all=FitMappedRte.objects.filter(fitroute=fitroute,date__lt=last_update).order_by('order')
 		if mappedrte_all:
-			last_order_num=mappedrte_all.objects.latest('order')
+			last_order_num=mappedrte_all.reverse()[0].order
 		else:
 			last_order_num=0
 		
@@ -134,7 +138,7 @@ def SaveMappedRoute(request):
 	fitrunner_pk=request.GET.get('fitrunner')
 	strokecolor=request.GET.get('strokecolor')
 	data_date=request.GET.get('date')
-	order=request.GET.get('order')
+	order=int(request.GET.get('order'))
 	order=order+1 ##increment order number before saving
 	#num_complete_waypt=int(request.GET.get('num_complete_waypt'))
 	

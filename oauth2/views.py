@@ -109,8 +109,15 @@ def Oauth2CallBackView(request):
 	with open(CLIENT_DIRECTORY) as f:
 		CLIENT_SECRET = f.read().strip()
 
+	CLIENT_DIRECTORY=os.path.join(BASE_DIR,'fitbiting')+'/REDIRECT_URI'
+	with open(CLIENT_DIRECTORY) as f:
+		REDIRECT_URI = f.read().strip()
+
 	client_id=CLIENT_ID
 	client_secret=CLIENT_SECRET
+	redirect_uri=REDIRECT_URI
+
+
 
 	token_url='https://api.fitbit.com/oauth2/token'
 	
@@ -118,7 +125,7 @@ def Oauth2CallBackView(request):
 	
 	##To Get Access and Refresh Token
 	BodyText={'code':code,
-			  'redirect_uri':'http://localhost:8000/oauth2/oauth2callback',
+			  'redirect_uri':redirect_uri,
 			  'client_id': client_id,
 			  'grant_type':'authorization_code',
 			  'expires_in':2592000,
