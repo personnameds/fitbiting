@@ -93,7 +93,18 @@ def GetNewAccessandRefreshToken(fitbiter):
 
 ##New User
 def Oauth2View(request):
+	
+	BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+	
+	CLIENT_DIRECTORY=os.path.join(BASE_DIR,'fitbiting')+'/REDIRECT_URI'
+	with open(CLIENT_DIRECTORY) as f:
+		REDIRECT_URI = f.read().strip()
+	
+	redirect_uri=REDIRECT_URI
+		
+	redirect_uri=urllib.parse.quote(redirect_uri, safe='')
 	authorize_url='https://www.fitbit.com/oauth2/authorize?response_type=code&client_id=22CVHF&redirect_uri=http%3A%2F%2Flocalhost%3A8000%2Foauth2%2Foauth2callback&scope=activity&expires_in=604800'
+	
 	return HttpResponseRedirect(authorize_url)
 
 def Oauth2CallBackView(request):

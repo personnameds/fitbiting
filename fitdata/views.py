@@ -1,4 +1,3 @@
-from django.shortcuts import redirect
 from django.urls import reverse
 from django.http import HttpResponseRedirect
 
@@ -12,6 +11,7 @@ from fitdata.forms import FitDataForm
 from fitmap.models import FitRoute, FitMappedRte
 
 import datetime
+
 
 ##Form that asks what data should be displayed
 class FitDataIndexView(FormView):
@@ -38,6 +38,7 @@ def UpdateFitbitDataFunc(fitbiter):
 		fitdata.save()
 	return
 
+##Works only for 1 fitbiter at a time!
 class FitDataDisplayView(TemplateView):
 	template_name="fitdata/fitdata_display.html"
 	
@@ -47,17 +48,16 @@ class FitDataDisplayView(TemplateView):
 		##Retrieves what data needs to be displayed based on Form from FitDataIndex
 		fitbiter_id=kwargs['fitbiter_id']
 		
-		#Only sending single fitbiter but will work for multiple
-		fitbiters=Fitbiter.objects.filter(fitbit_id=fitbiter_id)
+		#Only sending single fitbiter
+		fitbiter=Fitbiter.objects.get(fitbit_id=fitbiter_id)
 
 		##Based on data displays calls the UpdateFitbitData Function
-		UpdateFitbitDataFunc(fitbiters)
+		UpdateFitbitDataFunc(fitbiter)
 		
 		##Works only for 1 fitbiter at a time!
-		for fitbiter in fitbiters:
-			data_table=FitData.objects.filter(fitbiter=fitbiter).order_by('-date')[:5]
+		data_table=FitData.objects.filter(fitbiter=fitbiter).order_by('-date')[:5]
 
 
-		context['fitbiter']=fitbiters[0]
+		context['fitbiter']=fitbiter
 		context['data_table']=data_table
 		return context
