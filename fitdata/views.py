@@ -19,11 +19,16 @@ class FitDataIndexView(FormView):
 	form_class=FitDataForm
 
 	def form_valid(self, form):
-		self.fitbiter = form.cleaned_data['fitbiters']
-		return HttpResponseRedirect(self.get_success_url())
+		fitbiters = form.cleaned_data['fitbiters']
+		fitbiter_ids=[]
+		for fitbiter in fitbiters:
+			fitbiter_ids.append(fitbiter.pk)
+		self.fitbiter_ids=fitbiter_ids
+		self.num_days=form.cleaned_data['num_days']
+		return super().form_valid(form)
 		
 	def get_success_url(self):
-		return reverse('fitdata-display', kwargs={'fitbiter_id':self.fitbiter})
+		return reverse('fitdata-display', kwargs={'fitbiter_ids':self.fitbiter_ids,'num_days':self.num_days})
 		
 ##Downloads data from Fitbit
 ##Also updates keys etc.	
@@ -46,18 +51,31 @@ class FitDataDisplayView(TemplateView):
 		context = super().get_context_data(**kwargs)
 		
 		##Retrieves what data needs to be displayed based on Form from FitDataIndex
-		fitbiter_id=kwargs['fitbiter_id']
+		num_days=int(kwargs['num_days'])
 		
-		#Only sending single fitbiter
-		fitbiter=Fitbiter.objects.get(fitbit_id=fitbiter_id)
+		fitbiter_ids=kwargs['fitbiter_ids'] 
+		fitbiter_ids=eval(fitbiter_ids)
 
-		##Based on data displays calls the UpdateFitbitData Function
-		UpdateFitbitDataFunc(fitbiter)
+		##for fitbiter_id in fitbiter_ids:
+		fitbiters=Fitbiter.objects.filter(pk__in=fitbiter_ids)
+			
+		for fitbiter in fitbiters:
+			UpdateFitbitDataFunc(fitbiter)
+
+		num_fitbiters=fitbiters.count()
 		
-		##Works only for 1 fitbiter at a time!
-		data_table=FitData.objects.filter(fitbiter=fitbiter).order_by('-date')[:5]
-
-
-		context['fitbiter']=fitbiter
+		today = datetime.date.today()
+		ago = today - datetime.timedelta(days=(num_days-1))
+		
+		fitdata=FitData.objects.filter(fitbiter__in=fitbiters, date__gte=ago).order_by('date')
+		fitdata=zip(fitdata[0::2], fitdata[1::2])
+		
+		data_table=[]
+		for a,b in fitdata:
+			data_table.append([a.date, a.distance,b.distance])
+		
+		context['today']=today
+		context['ago']=ago
+		context['fitbiters']=fitbiters
 		context['data_table']=data_table
 		return context

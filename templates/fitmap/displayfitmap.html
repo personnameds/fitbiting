@@ -204,17 +204,30 @@
 								map: map
 								});
 
-							marker = new google.maps.Marker({
-								position: end,
-								map: map
-								});
-
 							var runPath= new google.maps.Polyline({
 								path: latlongs,
 								strokeColor: strokecolor,
 								strokeWeight:4
 							});
-				
+	
+							{% if forloop.first %}
+								var first_marker=latlongs[0];
+								
+								
+//May need to do for Start as well, will double check after 2 days of data. As will include MapppedRte stuff
+
+								//Marker for end of route
+								marker = new google.maps.Marker({
+									position: end,
+									map: map
+									});								
+																	
+							{% endif %}
+						
+							//Display the route on the map
+							runPath.setMap(map);			
+							
+								
 							var encodedPath = google.maps.geometry.encoding.encodePath(runPath.getPath());
 							encodedPath=encodedPath.replace(/\\/g, "\\\\");
 							var data =  {'encodedPath':encodedPath,
@@ -228,14 +241,6 @@
 			
 							//Django is returning a success variable but not sure how to see it
 							$.getJSON("{% url 'savemappedroute' %}", data);					
-
-					
-							{% if forloop.first %}
-								var first_marker=latlongs[0];
-							{% endif %}
-						
-							//Display the route on the map
-							runPath.setMap(map);
 
 							a=i;
 							b=j;

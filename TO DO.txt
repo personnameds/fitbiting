@@ -1,35 +1,32 @@
-Upload for Beta Testing
-
 Check FitMappedRte with Day 2 of Data
-
-Check Marker
-
-Display route choices based on who is logged in
-
-FitData, change graph date direction
-
-Front End
+	Markers
+	Display Boundary
 
 Share data, charts, graphs of who ran what, percentage etc
 
-Add labels to map
+Add labels to map and markers
 
+Front End
+
+Finish Finish Route
+
+Security and Login 
+	Tie Fitbit Data to Login 
+	Display route choices based on who is logged in
+	
+Colour Choice for Fitbiters
+	More then 8 runners will give error for stroke colour choice in creat4
+
+How much does it cost on Google API
+	How many API calls does Create make
+	How many API calls does Display make
+
+Create route make choosing of Fitbiters Dynamic
+	
 Create map using mouse drag
 Streamline and minimize Google Api usage
 Streamline and ensure accuracy of calculations, do it myself
 	Use Distance for each step which is embedded in Directions API for distance calculations 
 	https://developers.google.com/maps/documentation/directions/intro#DirectionsResponses
 
-Finish Finish Route
-
-Security and Login 
-	Tie Fitbit Data to Login 
-	
-Colour Choice for Fitbiters
-	More then 8 runners will give error for stroke colour choice in creat4
-
-Create route make choosing of Fitbiters Dynamic
-
-How much does it cost on Google API
-	How many API calls does Create make
-	How many API calls does Display make
+Fitdata Graphs, use calendar to pick dates

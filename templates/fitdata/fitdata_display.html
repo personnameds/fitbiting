@@ -2,7 +2,7 @@
 <html>
   	<head>
     	<title>Display Fitbit Data</title>
-    	
+    				
     	<!-- Load the AJAX API -->
     	<script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
     	<script type="text/javascript">
@@ -18,14 +18,28 @@
 				
 				//Create the data table
 				 var data = google.visualization.arrayToDataTable([
-					 ['Date', '{{fitbiter}}'],
+					 
+					 ['Date',
+					 {% for f in fitbiters %}
+					 	'{{f}}',
+					 {% endfor %}
+					 ],
+					 
 					 {% for data in data_table %}
-					 	['{{data.date}}',{{data.distance}}],
+					 	{% for d in data %}
+					 		{% if forloop.first %}
+					 			['{{d|date:"D M d"}}',
+					 		{% else %}
+					 			{{d}},
+					 		{% endif %}
+					 	{% endfor %}
+					 	],
 					 {% endfor %}
 				  ]);
 				
 				var options = {
-			  		title: "I'll figure that out later",
+			  		title: 'From {{ago|date:"l, F dS"}} until {{today|date:"l, F dS"}}',
+			  		vAxis: { title: "Distance (KM)" },
 					};
 				
 				// Instantiate and draw the chart.
