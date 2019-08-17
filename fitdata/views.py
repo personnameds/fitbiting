@@ -61,19 +61,24 @@ class FitDataDisplayView(TemplateView):
 			
 		for fitbiter in fitbiters:
 			UpdateFitbitDataFunc(fitbiter)
-
-		num_fitbiters=fitbiters.count()
 		
 		today = datetime.date.today()
 		ago = today - datetime.timedelta(days=(num_days-1))
 		
 		fitdata=FitData.objects.filter(fitbiter__in=fitbiters, date__gte=ago).order_by('date')
-		fitdata=zip(fitdata[0::2], fitdata[1::2])
 		
-		data_table=[]
-		for a,b in fitdata:
-			data_table.append([a.date, a.distance,b.distance])
+		fitdata_list=[]
+		first=True
+		for fitbiter in fitbiters:
+			if first:
+				fitdata_list.append(fitdata.filter(fitbiter=fitbiter).values_list('date', flat=True))
+				first=False
+			fitdata_list.append(fitdata.filter(fitbiter=fitbiter).values_list('distance', flat=True))
 		
+		zipped_fitdata=list(zip(*fitdata_list))
+		
+		data_table=[list(x) for x in zipped_fitdata]
+
 		context['today']=today
 		context['ago']=ago
 		context['fitbiters']=fitbiters

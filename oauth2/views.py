@@ -193,6 +193,10 @@ def Oauth2CallBackView(request):
 				distance=i['value'],
 				)
 		fitdata.save()
+		
+	##Stupid hack as needs to be iterable for FitData to Display
+	fitbiter_ids=[]
+	fitbiter_ids.append(fitbiter.pk)
 	
 	#Displays the fitbiters data
-	return redirect(reverse('fitdata-display', kwargs={'fitbiter_id':fitbiter.fitbit_id}))
+	return redirect(reverse('fitdata-display', kwargs={'fitbiter_ids':fitbiter_ids,'num_days':5}))

@@ -1,3 +1,7 @@
+FitData doesn't work
+	From New User
+	If only 1 user (Zip stuff is based on two users)
+
 Check FitMappedRte with Day 2 of Data
 	Markers
 	Display Boundary
@@ -30,3 +34,4 @@ Streamline and ensure accuracy of calculations, do it myself
 	https://developers.google.com/maps/documentation/directions/intro#DirectionsResponses
 
 Fitdata Graphs, use calendar to pick dates
+	Needs to catch if Fitbiter doesn't have data from those dates
