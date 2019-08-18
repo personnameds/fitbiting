@@ -96,24 +96,32 @@ class DisplayRouteTemplateView(TemplateView):
 		fitroute=FitRoute.objects.get(pk=kwargs['fitroute'])
 		fitrunners=FitRunner.objects.filter(fitroute=fitroute)
 
+##Only used for fitdata_all
+		fitbiters=Fitbiter.objects.filter(pk__in=fitrunners.values_list('fitbiter'))
+		
 		last_update=fitroute.last_update
 		fitroute.last_update=date.today()
 		fitroute.save()
 
-		fitbiters=[]
+##Now used by both
+		fitdata_all=FitData.objects.filter(fitbiter__in=fitbiters, date__gte=last_update).order_by('-date')
+
+##This is for map
 		fitdata_list=[]
-		
 		for fitrunner in fitrunners:
 			UpdateFitbitDataFunc(fitrunner.fitbiter)
 			##Get FitData from last update
 			##Includes last_update, because needs to redo that in case more distance was added later that day
 			##If last_update is today, will overwrite and update distance data as it changes
 			##If route created today will also catch and begin to save distance data
-			fitdata=FitData.objects.filter(fitbiter=fitrunner.fitbiter, date__gte=last_update).order_by('-date')
+			fitdata=fitdata_all.filter(fitbiter=fitrunner.fitbiter)
+##			fitdata=FitData.objects.filter(fitbiter=fitrunner.fitbiter, date__gte=last_update).order_by('-date')
 			for f in fitdata:
 				fitdata_list.append((f.date, fitrunner, f)) 
-		
+
+		##Do I need this sort or can I just add order_by as above
 		fitdata_list.sort(key=lambda x:x[0])
+		
 
 		##Need to check this and rewrite!
 		##Gets all mapped rtes, except the initial
@@ -123,6 +131,16 @@ class DisplayRouteTemplateView(TemplateView):
 		else:
 			last_order_num=0
 		
+		##Data for Stacked Bar Chart
+		dates=fitdata.values_list('date', flat=True).distinct()
+		data_table=[]
+		for d in dates:
+			data_table.append(d)
+			data_table.extend(fitdata_all.filter(date=d).values_list('distance', flat=True).order_by('date','fitbiter'))
+
+		context['fitrunners']=list(fitrunners)
+		context['data_table']=data_table
+
 		context['order']=last_order_num
 		context['fitdata_list']=fitdata_list
 		context['mappedrte_all'] = mappedrte_all

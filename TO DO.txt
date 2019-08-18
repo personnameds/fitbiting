@@ -1,14 +1,10 @@
-FitData doesn't work
-	From New User
-	If only 1 user (Zip stuff is based on two users)
+Side Bar of Map
+	Check if works for 2+ days
+	Code duplication between MapDisplay and Sidebar Graph
 
 Check FitMappedRte with Day 2 of Data
 	Markers
 	Display Boundary
-
-Share data, charts, graphs of who ran what, percentage etc
-
-Add labels to map and markers
 
 Front End
 
@@ -25,6 +21,9 @@ How much does it cost on Google API
 	How many API calls does Create make
 	How many API calls does Display make
 
+Fitdata Graphs, use calendar to pick dates
+	Needs to catch if Fitbiter doesn't have data from those dates
+
 Create route make choosing of Fitbiters Dynamic
 	
 Create map using mouse drag
@@ -33,5 +32,4 @@ Streamline and ensure accuracy of calculations, do it myself
 	Use Distance for each step which is embedded in Directions API for distance calculations 
 	https://developers.google.com/maps/documentation/directions/intro#DirectionsResponses
 
-Fitdata Graphs, use calendar to pick dates
-	Needs to catch if Fitbiter doesn't have data from those dates
+
