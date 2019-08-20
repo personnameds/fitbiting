@@ -1,12 +1,6 @@
-<!DOCTYPE html>
-<html>
-  <head>
-    <title>Fitbiting Homepage</title>
-  </head>
-  <body>
-  	<h2><a href="{% url 'admin:index' %}">Admin</a></h2>
-  	<h2><a href="{% url 'fitdata-index' %}">Fitbit Data</a></h2>
-  	<h2><a href="{% url 'fitmap-index' %}">Fit Map</a></h2>
-  	<h2><a href="{% url 'fitbiters-index' %}">Fitbiters</a></h2>
-  </body>
-</html>
+{% extends "base.html" %}
+
+{% block main_content %}
+	<h1>FitRoutes</h1>
+{% endblock %}
+		

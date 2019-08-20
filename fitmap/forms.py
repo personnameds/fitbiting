@@ -1,9 +1,19 @@
 from django import forms
 from fitmap.models import FitRoute
 from fitbiters.models import Fitbiter
+from crispy_forms.helper import FormHelper
+from crispy_forms.layout import Submit
+from crispy_forms.layout import Button
 
 class FitMapForm(forms.Form):
 	routes=forms.ModelChoiceField(queryset=FitRoute.objects.all(),required=False, empty_label=None)
+	
+	def __init__(self, *args, **kwargs):
+		super().__init__(*args, **kwargs)
+		self.helper = FormHelper()
+		self.helper.form_method = 'post'
+		self.helper.add_input(Submit('display', 'Display Selected Route'))
+		self.helper.add_input(Submit('create', 'Create New Route'))
 
 class CreateRouteForm_MapDetails(forms.Form):
 	title=forms.CharField(max_length=50, widget=forms.TextInput(attrs={'id':"title",'size':'30%'}))
@@ -24,3 +34,10 @@ class CreateRouteForm_MapDetails(forms.Form):
 			if status == 'False':
 				raise forms.ValidationError("Check if your route is valid")
 			return status
+		
+	def __init__(self, *args, **kwargs):
+		super().__init__(*args, **kwargs)
+		self.helper = FormHelper()
+		self.helper.form_method = 'post'
+		self.helper.add_input(Button('check', 'Check Route', css_id='check', css_class='btn-info'))
+		self.helper.add_input(Submit('save', 'Save Route'))

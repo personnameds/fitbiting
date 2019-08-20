@@ -104,6 +104,7 @@ class DisplayRouteTemplateView(TemplateView):
 		fitroute.save()
 
 ##Now used by both
+##Not all only data for all fitrunners from the last update
 		fitdata_all=FitData.objects.filter(fitbiter__in=fitbiters, date__gte=last_update).order_by('-date')
 
 ##This is for map
@@ -132,11 +133,20 @@ class DisplayRouteTemplateView(TemplateView):
 			last_order_num=0
 		
 		##Data for Stacked Bar Chart
-		dates=fitdata.values_list('date', flat=True).distinct()
+		dates=fitdata.values_list('date', flat=True).order_by('-date').distinct() ##Need to include order_by for database????
+		mapped_dates=mappedrte_all.values_list('date', flat=True).order_by('-date').distinct()
+		mapped_fitdata=FitData.objects.filter(fitbiter__in=fitbiters, date__in=mapped_dates)
+		
 		data_table=[]
 		for d in dates:
-			data_table.append(d)
-			data_table.extend(fitdata_all.filter(date=d).values_list('distance', flat=True).order_by('date','fitbiter'))
+			dt=[d]
+			dt.extend(fitdata_all.filter(date=d).values_list('distance', flat=True).order_by('fitbiter'))
+			data_table.append(dt)
+
+		for m in mapped_dates:
+			mt=[m]
+			mt.extend(mapped_fitdata.filter(date=m).values_list('distance', flat=True).order_by('fitbiter'))
+			data_table.append(mt)
 
 		context['fitrunners']=list(fitrunners)
 		context['data_table']=data_table

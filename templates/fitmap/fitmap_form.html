@@ -1,19 +1,20 @@
-<!DOCTYPE html>
-<html>
-  	<head>
-    	<title>Routes</title>
-  	</head>
-  	
-  	<body>	
-		<h3><a href="{% url 'homepage-index' %}">Homepage</a></h3>
-		<h3><a href="{% url 'admin:index' %}">Admin</a></h3>  
-		
-		<p>Check a route or create new one </p>
-		<form action="" method="post">{% csrf_token %}
-    		{{ form.as_p }}
-   		 	<input type="submit" value="Display Selected Route" name="display"/>
-   		 	<input type="submit" value="Create New Route" name="create"/>
-		</form>
-		
-	</body>
-</html>
+{% extends "base.html" %}
+
+{% load crispy_forms_tags %}
+
+{%block head_content %}
+	<style>
+		/* Needed for crispy-forms to show error message */
+		/* This is a crispy-form, bootstrap 4 package error */
+		.invalid-feedback {
+			display: block;
+		}
+	</style>
+{% endblock %}
+
+{% block main_content %}
+	<h1>FitMaps</h1>
+
+	<h6>Check a route or create new one</h6> 
+	{% crispy form %}
+{% endblock %}

@@ -63,6 +63,8 @@ class FitDataDisplayView(TemplateView):
 			UpdateFitbitDataFunc(fitbiter)
 		
 		today = datetime.date.today()
+##If Fitbiter has less than num of days selected will cut of newest dates
+
 		ago = today - datetime.timedelta(days=(num_days-1))
 		
 		fitdata=FitData.objects.filter(fitbiter__in=fitbiters, date__gte=ago).order_by('date')

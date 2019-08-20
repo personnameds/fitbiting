@@ -42,7 +42,10 @@ INSTALLED_APPS = [
     'homepage.apps.HomepageConfig',
     'fitdata.apps.FitdataConfig',
     'fitmap.apps.FitmapConfig',
+    'crispy_forms',
 ]
+
+CRISPY_TEMPLATE_PACK = 'bootstrap4'
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',

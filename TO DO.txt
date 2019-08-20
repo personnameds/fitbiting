@@ -1,15 +1,10 @@
-Side Bar of Map
-	Check if works for 2+ days
-	Code duplication between MapDisplay and Sidebar Graph
-
-Check FitMappedRte with Day 2 of Data
-	Markers
-	Display Boundary
+Finish Finish Route
 
 Front End
 
-Finish Finish Route
-
+What happens if 1 fitbiter has 0 or doesn't login
+	Markers
+	
 Security and Login 
 	Tie Fitbit Data to Login 
 	Display route choices based on who is logged in
@@ -27,9 +22,17 @@ Fitdata Graphs, use calendar to pick dates
 Create route make choosing of Fitbiters Dynamic
 	
 Create map using mouse drag
+
 Streamline and minimize Google Api usage
+
 Streamline and ensure accuracy of calculations, do it myself
 	Use Distance for each step which is embedded in Directions API for distance calculations 
 	https://developers.google.com/maps/documentation/directions/intro#DirectionsResponses
+	Display Boundary
+	Markers
 
-
+Side Bar of Map
+	Code duplication between MapDisplay and Sidebar Graph
+	
+CreateRoute 
+	Save Validation Error does not display using Crispy Forms
