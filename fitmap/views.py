@@ -30,6 +30,8 @@ class FitMapIndex(FormView):
 			return redirect('createroute')
 		else:
 			self.fitroute=form.cleaned_data['routes']
+			if self.fitroute.finished==True:
+				return redirect(reverse('displayfinishedroute', kwargs={'fitroute':self.fitroute.pk}))
 			return HttpResponseRedirect(self.get_success_url())
 		
 	def get_success_url(self):
@@ -159,6 +161,38 @@ class DisplayRouteTemplateView(TemplateView):
 		context['API_KEY']=settings.API_KEY
 		return context
 
+class DisplayFinishedRouteTemplateView(TemplateView):
+	template_name="fitmap/finishedfitmap.html"
+	
+	def get_context_data(self, **kwargs):
+		context = super().get_context_data(**kwargs)
+		
+		fitroute=FitRoute.objects.get(pk=kwargs['fitroute'])
+		fitrunners=FitRunner.objects.filter(fitroute=fitroute)
+
+		fitbiters=Fitbiter.objects.filter(pk__in=fitrunners.values_list('fitbiter'))
+		
+		##Data for Map
+		mappedrte_all=FitMappedRte.objects.filter(fitroute=fitroute).order_by('order')
+
+		##Data for Stacked Bar Chart
+		mapped_dates=mappedrte_all.values_list('date', flat=True).order_by('-date').distinct()
+		mapped_fitdata=FitData.objects.filter(fitbiter__in=fitbiters, date__in=mapped_dates)
+		
+		data_table=[]
+		for m in mapped_dates:
+			mt=[m]
+			mt.extend(mapped_fitdata.filter(date=m).values_list('distance', flat=True).order_by('fitbiter'))
+			data_table.append(mt)
+
+		context['fitrunners']=list(fitrunners)
+		context['data_table']=data_table
+
+		context['mappedrte_all'] = mappedrte_all
+		context['fitroute']=fitroute
+		context['API_KEY']=settings.API_KEY
+		return context
+
 #Used for creating a route and displaying a route
 def SaveMappedRoute(request):
 	encodedPath=request.GET.get('encodedPath')
@@ -194,4 +228,15 @@ def SaveMappedRoute(request):
 	
 	return JsonResponse({'response':'success'}) ##returned by not captured, not sure what happens with it?
 
+#Used for creating a route and displaying a route
+def FinishedRoute(request, finished, fitroute):
+	fitroute=FitRoute.objects.get(pk=int(fitroute))
+	if finished=='delete':
+		fitroute.delete()
+		return redirect(reverse('fitmap-index'))
+	else:
+		fitroute.finished=True
+		fitroute.title=fitroute.title+' (Finished)'
+		fitroute.save()
+		return redirect(reverse('displayfinishedroute', kwargs={'fitroute':fitroute.pk}))
 

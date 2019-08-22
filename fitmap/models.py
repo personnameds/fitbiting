@@ -9,7 +9,8 @@ class FitRoute(models.Model):
 	end_lat=models.DecimalField(max_digits=10, decimal_places=6)
 	end_long=models.DecimalField(max_digits=10, decimal_places=6)
 	last_update=models.DateField()
-
+	finished=models.BooleanField(default=False, blank=True)
+	
 	def __str__(self):
 		return '%s' %self.title
 
@@ -20,7 +21,7 @@ class FitRunner(models.Model):
 	colour=models.CharField(max_length=7)
 	
 	def __str__(self):
-		return '%s' %self.fitbiter.fitbit_id
+		return '%s in %s' %(self.fitbiter.fitbit_id, self.fitroute)
 
 class FitMappedRte(models.Model):
 	fitrunner=models.ForeignKey(FitRunner, on_delete=models.CASCADE)

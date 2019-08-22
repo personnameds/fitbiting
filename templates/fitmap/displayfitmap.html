@@ -30,45 +30,17 @@
 		position: absolute;
 		left: 5px;
 		top: 10px;
-	}
-	
-	.modal {
-	display: none;
-	position: fixed;
-	left: 0;
-	top: 0;
-	width: 100%;
-	height: 100%;
-	background-color: rgba(0, 0, 0, 0.5);
-	opacity: 0;
-	visibility: hidden;
-	transform: scale(1.1);
-	transition: visibility 0s linear 0.25s, opacity 0.25s 0s, transform 0.25s;
-	}
-	.modal-content {
-		position: absolute;
-		top: 100%;
-		left: 100%;
-		transform: translate(-50%, -50%);
-		background-color: white;
-		padding: 1rem 1.5rem;
-		width: 24rem;
-		border-radius: 0.5rem;
-	}
-	.show-modal {
-		opacity: 1;
-		visibility: visible;
-		transform: scale(1.0);
-		transition: visibility 0s linear 0s, opacity 0.25s 0s, transform 0.25s;
-	}			
+	}		
 </style>
 
 <!-- Google Charts -->
+<!-- Side Bar Chart -->
 <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
 <script type="text/javascript">
 	google.charts.load('current', {packages: ['corechart']});
 	google.charts.setOnLoadCallback(drawChart);
 
+	
 	function drawChart() {
 		// Define the chart to be drawn.
 		var data = google.visualization.arrayToDataTable([
@@ -110,6 +82,207 @@
 	  chart.draw(data, options);
 	}
 </script>
+
+<!-- Map Display-->
+<script>	
+	
+	function displayRoute() {
+	
+		//Display the previous route data
+		var map = new google.maps.Map(document.getElementById('map'));
+		var marker; 
+		var decodedPath;
+		var strokecolor='';
+
+		//Decode the saved route data
+		{% for mappedrte in mappedrte_all %}
+		
+			var decodedPath=google.maps.geometry.encoding.decodePath("{{mappedrte.maprtedata}}");
+			
+			var runPath = new google.maps.Polyline({
+				path: decodedPath,
+				strokeColor:'{{mappedrte.fitrunner.colour}}',
+				strokeWeight:4
+				});
+
+			marker = new google.maps.Marker({
+						position: decodedPath[0],
+						label: 'Decoded Start {{mappedrte.fitrunner}}',
+						map: map,
+						});
+
+			runPath.setMap(map);
+		{% endfor %} 
+		
+		//Update the map with new data
+		var directionsService = new google.maps.DirectionsService();
+		if (decodedPath) {
+			var start = {lat: decodedPath[decodedPath.length-1].lat(), lng: decodedPath[decodedPath.length-1].lng()};
+		} else {
+			var start = {lat: {{fitroute.start_lat}}, lng: {{fitroute.start_long}}};
+		}
+		var end = {lat: {{fitroute.end_lat}}, lng: {{fitroute.end_long}}};
+
+		var request = {
+				   origin: start,
+				   destination: end,
+				   travelMode: 'WALKING',
+				   avoidFerries: true,
+				  }; // Request	
+
+		directionsService.route(request, function(result, status) {
+			if (status == 'OK') {
+				//Start matching distance of runner against route
+				var a=0;
+				var b=0;
+				var c=0;
+				var dist=0;
+				var olddist=0;
+				var latlongs=[];
+				var z=0;
+				var order={{order}};
+				var finishedroute=false;
+			
+				// Fitdate has date of data but I don't do anything with it
+				{% for fitdate, fitrunner, fitdata in fitdata_list %}
+				
+					strokecolor='{{fitrunner.colour}}'	
+					//Convert route into polylines
+					var distance={{fitdata.distance}}*1000;
+					var legs=result.routes[0].legs; //legs are point to point
+					legs:
+					for (i = a; i < legs.length; i++) {
+						var steps = legs[i].steps; //steps are steps in each leg
+						steps:
+						for (j=b; j < steps.length; j++) {
+							var nextSegment = steps[j].path; //lat and long for each step
+							segments:
+							for (k=c; k < nextSegment.length; k++) {
+								latlongs[z]=nextSegment[k];  //latlongs holds array of lat and long for each step
+								if (z>0) {
+								olddist=dist;
+								dist+= google.maps.geometry.spherical.computeDistanceBetween(latlongs[z],latlongs[z-1]);
+								}
+								if (dist >= distance) {
+									break legs;
+								}
+								z++;
+
+							} //for k
+						c=0;
+						} // for j
+					b=0;
+					} // for i
+
+//Not best solution
+//Last z location is +1 because of z++ after the fact
+//Need to always z-1 to find last location
+//If z=0 because no data, screws up
+					//No Data
+					if (z==0) {
+						var stopSpot=latlongs[z]
+						}
+					//Check to see if it reached the end of the route								
+					else if (latlongs[z-1].lat()- result.routes[0].legs[0].end_location.lat() < 0.0001 && latlongs[z-1].lng()- result.routes[0].legs[0].end_location.lng() < 0.0001) {
+						//Loop broke so no z++ so no z last element is [z-1]
+						var stopSpot = latlongs[z-1];
+						finishedroute=true;
+					} else {
+						//Not finished route
+						//Find the exact point where the distance is met
+						//Finds the spot along the last polyline
+						var percentDist=(distance-olddist)/(dist-olddist);
+						var stopSpot = google.maps.geometry.spherical.interpolate(latlongs[z-1],latlongs[z],percentDist);
+						latlongs[z]=stopSpot; 
+					} 
+// Possible - Wrong position if distance = 0 and second or more runner, 1st runner is ok
+					marker = new google.maps.Marker({
+						position: latlongs[0],
+						map: map,
+						label: 'Display Start {{fitrunner}}',
+						});
+// Possible - Wrong line if distance = 0 and second or more runner, 1st runner is ok
+					var runPath= new google.maps.Polyline({
+						path: latlongs,
+						strokeColor: strokecolor,
+						strokeWeight:4
+					});
+
+					{% if forloop.first %}
+						var first_marker=latlongs[0];						
+															
+					{% endif %}
+				
+					//Display the route on the map
+					runPath.setMap(map);			
+					
+						
+					var encodedPath = google.maps.geometry.encoding.encodePath(runPath.getPath());
+					encodedPath=encodedPath.replace(/\\/g, "\\\\");
+					var data =  {'encodedPath':encodedPath,
+								 'fitrunner':'{{fitrunner.pk}}',
+								 'fitroute':'{{fitroute.pk}}',
+								 'date':'{{fitdata.date}}',
+								 'strokecolor':strokecolor,
+								 'order':order,
+								 //'num_complete_waypt':i
+								 };
+	
+					//Django is returning a success variable but not sure how to see it
+					$.getJSON("{% url 'savemappedroute' %}", data);					
+
+					a=i;
+					b=j;
+					c=k;
+					z=0; 
+					latlongs=[];
+					latlongs[z]=stopSpot;
+					z=1;
+					dist=dist-distance;	
+					order=order+1;
+				
+				{% endfor %}
+			
+				//Last Person gets an End Marker only
+				var last_marker=stopSpot;
+				marker = new google.maps.Marker({
+				position: last_marker,
+				map: map,
+				label: 'Display End',
+				});				
+				marker.setMap(map);
+								
+				//Marker for end of route
+				marker = new google.maps.Marker({
+					position: end,
+					map: map,
+					label: 'End of Route',
+					});		
+				marker.setMap(map);
+			
+				//Zooms in on latest updates
+				//Make the map the size of the latest route
+				var bounds=new google.maps.LatLngBounds();
+				bounds.extend(last_marker);
+				bounds.extend(first_marker);
+				map.fitBounds(bounds);
+				
+				
+//Something wrong with finishedroute and displaying of modal
+				if (finishedroute) {
+					$('#finishedModal').modal();
+				}
+		
+			} else {
+				console.log('Not OK');
+				console.log(status);
+				console.log(result);
+				}
+	
+		}); // Close Directions Service Route			
+	} //End of Display Route Function
+		
+</script>
 {% endblock %}
 {% block main_content%}
 		<h2>{{fitroute.title}}</h2>
@@ -122,248 +295,33 @@
 				<div id="map"></div>
 			</div>
 		</div>
-
-		<div class="modal">
+		
+		<!-- Modal -->
+		<div class="modal fade" id="finishedModal" tabindex="-1" role="dialog" aria-labelledby="finishedModalLabel" aria-hidden="true">
+		  <div class="modal-dialog" role="document">
 			<div class="modal-content">
-				<h1>You Finished!</h1>
+			  <div class="modal-header">
+				<h5 class="modal-title" id="finishedModalLabel">Finished!</h5>
+				<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+				  <span aria-hidden="true">&times;</span>
+				</button>
+			  </div>
+			  <div class="modal-body">
+				<p>Congrtulations, you finished the route!</p>
+				<p>You can either close and save the information, so you can take a look at it later or you can simply delete it.<p>
+			  </div>
+			  <div class="modal-footer">
+				<a href="{% url 'finishedroute' finished='save' fitroute=fitroute.pk %}" class="btn btn-primary" role="button">Close and Save</a>
+				<a href="{% url 'finishedroute' finished='delete' fitroute=fitroute.pk %}" class="btn btn-danger" role="button">Delete</a>
+			  </div>
 			</div>
+		  </div>
 		</div>
-
-
-		<script>
-			//Display the previous route data
-			function displayRoute() {
-			
-				var map = new google.maps.Map(document.getElementById('map'));
-
-
-//Decoded Path Stuff haven't checked because I don't have any data
-				var marker; 
-				var decodedPath;
-				var strokecolor='';
-
-				//Decode the saved and encoded route data
-				{% for mappedrte in mappedrte_all %}
-				
-					var decodedPath=google.maps.geometry.encoding.decodePath("{{mappedrte.maprtedata}}");
-					
-					var runPath = new google.maps.Polyline({
-						path: decodedPath,
-						strokeColor:'{{mappedrte.fitrunner.colour}}',
-						strokeWeight:4
-						});
-					
-					//Shouldn't need because Display Start should be here
-					//marker = new google.maps.Marker({
-					//			position: decodedPath[decodedPath.length-1], //-1 because length is how many elements but first element is 0
-					//			map: map,
-					//			label: 'Decoded End',
-					//			});
-								
-					marker = new google.maps.Marker({
-								position: decodedPath[0],
-								label: 'Decoded Start {{mappedrte.fitrunner}}',
-								map: map,
-								});
-					
-//Don't need
-//					{% if forloop.first %}
-//						var first_position=decodedPath[0];
-//					{% endif %}
-									
-					//Sets the path to the map to be displayed
-					runPath.setMap(map);
-	
-				{% endfor %} 
-
-//Not displaying correctly, need to figure that out	
-//Don't need...
- 				//var bounds=new google.maps.LatLngBounds();
- 				//bounds.extend(first_position);
- 				//bounds.extend(decodedPath[decodedPath.length-1]);
- 				//map.fitBounds(bounds);	
-				
-				//Update the map with new data
-				var directionsService = new google.maps.DirectionsService();
-				if (decodedPath) {
-					var start = {lat: decodedPath[decodedPath.length-1].lat(), lng: decodedPath[decodedPath.length-1].lng()};
-				} else {
-					var start = {lat: {{fitroute.start_lat}}, lng: {{fitroute.start_long}}};
-//Don't need
-//					var first_position=start;
-				}
-				var end = {lat: {{fitroute.end_lat}}, lng: {{fitroute.end_long}}};
-// 					var waypts=[
-// 						{% for waypoint in waypoints %}
-// 							{location: new google.maps.LatLng({{waypoint.lat}},{{waypoint.long}}),stopover: true},
-// 						{% endfor %}
-//								]; //waypts
-
-				var request = {
-						   origin: start,
-						   destination: end,
-						   //waypoints: waypts,
-						   travelMode: 'WALKING',
-						   avoidFerries: true,
-						  }; // Request	
-
-				directionsService.route(request, function(result, status) {
-					if (status == 'OK') {
-						
-						var a=0;
-						var b=0;
-						var c=0;
-						var dist=0;
-						var olddist=0;
-						var latlongs=[];
-						var z=0;
-						var order={{order}};
-						var finishedroute=false;
-					
-						// Fitdate has date of data but I don't do anything with it
-						{% for fitdate, fitrunner, fitdata in fitdata_list %}
-						
-							strokecolor='{{fitrunner.colour}}'	
-							//Convert route into polylines
-							var distance={{fitdata.distance}}*1000;
-							var legs=result.routes[0].legs; //legs are point to point
-							legs:
-							for (i = a; i < legs.length; i++) {
-								var steps = legs[i].steps; //steps are steps in each leg
-								steps:
-								for (j=b; j < steps.length; j++) {
-									var nextSegment = steps[j].path; //lat and long for each step
-									segments:
-									for (k=c; k < nextSegment.length; k++) {
-										latlongs[z]=nextSegment[k];  //latlongs holds array of lat and long for each step
-										if (z>0) {
-										olddist=dist;
-										dist+= google.maps.geometry.spherical.computeDistanceBetween(latlongs[z],latlongs[z-1]);
-										}
-										if (dist >= distance) {
-											break legs;
-										}
-										z++;
-
-									} //for k
-								c=0;
-								} // for j
-							b=0;
-							} // for i
-
-//Not best solution
-//Last z location is +1 because of z++ after the fact
-//Need to always z-1 to find last location
-//If z=0 because no data, screws up
-							//No Data
-							if (z==0) {
-								var stopSpot=latlongs[z]
-								}
-							//Check to see if it reached the end of the route								
-							else if (latlongs[z-1].lat()- result.routes[0].legs[0].end_location.lat() < 0.0001 && latlongs[z-1].lng()- result.routes[0].legs[0].end_location.lng() < 0.0001) {
-								//Loop broke so no z++ so no z last element is [z-1]
-								var stopSpot = latlongs[z-1];
-								finishedroute=true;
-							} else {
-								//Not finished route
-								//Find the exact point where the distance is met
-								//Finds the spot along the last polyline
-								var percentDist=(distance-olddist)/(dist-olddist);
-								var stopSpot = google.maps.geometry.spherical.interpolate(latlongs[z-1],latlongs[z],percentDist);
-								latlongs[z]=stopSpot; 
-							} 
-// Possible - Wrong position if distance = 0 and second or more runner, 1st runner is ok
-							marker = new google.maps.Marker({
-								position: latlongs[0],
-								map: map,
-								label: 'Display Start {{fitrunner}}',
-								});
-// Possible - Wrong line if distance = 0 and second or more runner, 1st runner is ok
-							var runPath= new google.maps.Polyline({
-								path: latlongs,
-								strokeColor: strokecolor,
-								strokeWeight:4
-							});
-	
-							{% if forloop.first %}
-								var first_marker=latlongs[0];						
-																	
-							{% endif %}
-						
-							//Display the route on the map
-							runPath.setMap(map);			
-							
-								
-							var encodedPath = google.maps.geometry.encoding.encodePath(runPath.getPath());
-							encodedPath=encodedPath.replace(/\\/g, "\\\\");
-							var data =  {'encodedPath':encodedPath,
-										 'fitrunner':'{{fitrunner.pk}}',
-										 'fitroute':'{{fitroute.pk}}',
-										 'date':'{{fitdata.date}}',
-										 'strokecolor':strokecolor,
-										 'order':order,
-										 //'num_complete_waypt':i
-										 };
-			
-							//Django is returning a success variable but not sure how to see it
-							$.getJSON("{% url 'savemappedroute' %}", data);					
-
-							a=i;
-							b=j;
-							c=k;
-							z=0; 
-							latlongs=[];
-							latlongs[z]=stopSpot;
-							z=1;
-							dist=dist-distance;	
-							order=order+1;
-						
-						{% endfor %}
-					
-						//Last Person gets an End Marker only
-						var last_marker=stopSpot;
-						marker = new google.maps.Marker({
-						position: last_marker,
-						map: map,
-						label: 'Display End',
-						});				
-						marker.setMap(map);
-										
-						//Marker for end of route
-						marker = new google.maps.Marker({
-							position: end,
-							map: map,
-							label: 'End of Route',
-							});		
-						marker.setMap(map);
-					
-						//Zooms in on latest updates
-						//Make the map the size of the latest route
-						var bounds=new google.maps.LatLngBounds();
-						bounds.extend(last_marker);
-						bounds.extend(first_marker);
-						map.fitBounds(bounds);
-						
-						
-//Something wrong with finishedroute and displaying of modal
-						if (finishedroute) {
-							var modal = document.querySelector(".modal");
-							modal.classList.toggle("show-modal");
-						}
-				
-					} else {
-						console.log('Not OK');
-						console.log(status);
-						console.log(result);
-						}
-			
-				}); // Close Directions Service Route			
-			} //End of Display Route Function
-		</script>
+		
+		
  {% endblock %}
  
  {% block body_script %} 
 	<!-- Google Maps -->
 	<script src="https://maps.googleapis.com/maps/api/js?key={{API_KEY}}&libraries=geometry&places&callback=displayRoute" async defer></script>
-	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>	
 {% endblock%}	

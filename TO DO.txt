@@ -1,6 +1,4 @@
-Finish Finish Route
-
-Front End
+Homepage make datadashbaord or something
 
 What happens if 1 fitbiter has 0 or doesn't login
 	Markers
