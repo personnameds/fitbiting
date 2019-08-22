@@ -34,3 +34,7 @@ Side Bar of Map
 	
 CreateRoute 
 	Save Validation Error does not display using Crispy Forms
+
+Encoded Data
+	Do I need?
+	Can I post instead of get
