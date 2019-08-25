@@ -65,6 +65,7 @@ class CreateRouteFormView(FormView):
 			start_long=start_long,
 			end_lat=end_lat,
 			end_long=end_long,
+			start_date=date.today()
 			)
 		fitroute.save()
 		
