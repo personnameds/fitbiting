@@ -64,7 +64,7 @@
 		  origin: document.getElementById('start').value,
 		  destination: document.getElementById('end').value,
 		  travelMode: 'WALKING',
-		  avoidFerries: true,
+		  avoidFerries: false,
 		}, function(response, status) {
 		  if (status === 'OK') {
 			directionsDisplay.setDirections(response);

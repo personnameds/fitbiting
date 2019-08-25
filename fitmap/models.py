@@ -9,7 +9,7 @@ class FitRoute(models.Model):
 	end_lat=models.DecimalField(max_digits=10, decimal_places=6)
 	end_long=models.DecimalField(max_digits=10, decimal_places=6)
 	finished=models.BooleanField(default=False, blank=True)
-	start_date=models.DateField()
+	start_date=models.DateField(blank=True, null=True)
 	
 	def __str__(self):
 		return '%s' %self.title
