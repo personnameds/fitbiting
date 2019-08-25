@@ -73,7 +73,6 @@ class CreateRouteFormView(FormView):
 			fitrunner=FitRunner(fitbiter=fitbiter, 
 					   			colour=strokecolor[i],
 					   			fitroute=fitroute,
-					   			last_update=date.today()
 					   			)
 			fitrunner.save()
 			i += 1
