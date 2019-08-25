@@ -1,12 +1,19 @@
+
+
 Homepage make datadashbaord or something
 
-What happens if 1 fitbiter has 0 or doesn't login
-	Markers
-	
 Security and Login 
 	Tie Fitbit Data to Login 
 	Display route choices based on who is logged in
-	
+
+Streamline and ensure accuracy of calculations, do it myself
+	Use Distance for each step which is embedded in Directions API for distance calculations 
+	https://developers.google.com/maps/documentation/directions/intro#DirectionsResponses
+	Display Boundary
+	Markers
+
+If second runner has zero data, then line gets screwed up, whole z++ thing
+
 Colour Choice for Fitbiters
 	More then 8 runners will give error for stroke colour choice in creat4
 
@@ -15,19 +22,13 @@ How much does it cost on Google API
 	How many API calls does Display make
 
 Fitdata Graphs, use calendar to pick dates
-	Needs to catch if Fitbiter doesn't have data from those dates
+	Needs to catch if Fitbiter doesn't have data from those dates, based on last_sync
 
 Create route make choosing of Fitbiters Dynamic
 	
 Create map using mouse drag
 
 Streamline and minimize Google Api usage
-
-Streamline and ensure accuracy of calculations, do it myself
-	Use Distance for each step which is embedded in Directions API for distance calculations 
-	https://developers.google.com/maps/documentation/directions/intro#DirectionsResponses
-	Display Boundary
-	Markers
 
 Side Bar of Map
 	Code duplication between MapDisplay and Sidebar Graph
@@ -38,3 +39,4 @@ CreateRoute
 Encoded Data
 	Do I need?
 	Can I post instead of get
+	

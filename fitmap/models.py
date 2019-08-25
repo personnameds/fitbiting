@@ -8,8 +8,8 @@ class FitRoute(models.Model):
 	start_long=models.DecimalField(max_digits=10, decimal_places=6)
 	end_lat=models.DecimalField(max_digits=10, decimal_places=6)
 	end_long=models.DecimalField(max_digits=10, decimal_places=6)
-	last_update=models.DateField()
 	finished=models.BooleanField(default=False, blank=True)
+	start_date=models.DateField()
 	
 	def __str__(self):
 		return '%s' %self.title
@@ -28,7 +28,6 @@ class FitMappedRte(models.Model):
 	fitroute=models.ForeignKey(FitRoute, on_delete=models.CASCADE)
 	date=models.DateField()
 	maprtedata=models.TextField() 
-	order=models.PositiveSmallIntegerField();
 	
 	def __str__(self):
 		return '%s on %s for %s' %(self.fitroute.title, self.date, self.fitrunner.fitbiter.fitbit_id)

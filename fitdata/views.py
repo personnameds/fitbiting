@@ -34,6 +34,7 @@ class FitDataIndexView(FormView):
 ##Also updates keys etc.	
 def UpdateFitbitDataFunc(fitbiter):
 	activity_data=GetFitbitData(fitbiter)
+	
 	distance_by_date=activity_data['activities-distance']
 	for i in distance_by_date:
 		fitdata=FitData(fitbiter=fitbiter,

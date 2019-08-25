@@ -7,6 +7,9 @@ class Fitbiter(models.Model):
     fitbit_id=models.CharField(max_length=15, unique=True)
     access_token=models.CharField(max_length=255)
     refresh_token=models.CharField(max_length=255)
+    last_sync=models.DateField(blank=True, null=True)
+    #Will need to check one day
+    #device_id=models.CharField(max_length=15, unique=True)
 
     def __str__(self):
         return '%s' %self.fitbit_id 

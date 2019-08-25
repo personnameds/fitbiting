@@ -65,7 +65,6 @@ class CreateRouteFormView(FormView):
 			start_long=start_long,
 			end_lat=end_lat,
 			end_long=end_long,
-			last_update=date.today(),
 			)
 		fitroute.save()
 		
@@ -74,6 +73,7 @@ class CreateRouteFormView(FormView):
 			fitrunner=FitRunner(fitbiter=fitbiter, 
 					   			colour=strokecolor[i],
 					   			fitroute=fitroute,
+					   			last_update=date.today()
 					   			)
 			fitrunner.save()
 			i += 1
@@ -86,9 +86,6 @@ class CreateRouteFormView(FormView):
 	def get_success_url(self):
 		return reverse('displayroute', kwargs={'fitroute':self.fitroute.pk})
 
-def takeThird(elem):
-	return elem[2]		
-
 class DisplayRouteTemplateView(TemplateView):
 	template_name="fitmap/displayfitmap.html"
 	
@@ -96,68 +93,52 @@ class DisplayRouteTemplateView(TemplateView):
 		context = super().get_context_data(**kwargs)
 		
 		fitroute=FitRoute.objects.get(pk=kwargs['fitroute'])
+		start_date=fitroute.start_date
+		
 		fitrunners=FitRunner.objects.filter(fitroute=fitroute)
 
-##Only used for fitdata_all
 		fitbiters=Fitbiter.objects.filter(pk__in=fitrunners.values_list('fitbiter'))
-		
-		last_update=fitroute.last_update
-		fitroute.last_update=date.today()
-		fitroute.save()
+		fitdata_all=FitData.objects.filter(fitbiter__in=fitbiters, date__gte=start_date).order_by('-date')
 
-##Now used by both
-##Not all only data for all fitrunners from the last update
-		fitdata_all=FitData.objects.filter(fitbiter__in=fitbiters, date__gte=last_update).order_by('-date')
+##Data for map
 
-##This is for map
+		#Data from FitDate after or same date as last update
 		fitdata_list=[]
+		mappedrte_list=[]
 		for fitrunner in fitrunners:
-			UpdateFitbitDataFunc(fitrunner.fitbiter)
-			##Get FitData from last update
-			##Includes last_update, because needs to redo that in case more distance was added later that day
-			##If last_update is today, will overwrite and update distance data as it changes
-			##If route created today will also catch and begin to save distance data
-			fitdata=fitdata_all.filter(fitbiter=fitrunner.fitbiter)
-##			fitdata=FitData.objects.filter(fitbiter=fitrunner.fitbiter, date__gte=last_update).order_by('-date')
+			#Get and update each fitbiter involved in the route
+			fitbiter=Fitbiter.objects.get(fitbit_id=fitrunner.fitbiter)
+			UpdateFitbitDataFunc(fitbiter)
+
+			#All data since last update of this fitrunner
+			last_sync=fitbiter.last_sync
+			
+			fitdata=fitdata_all.filter(fitbiter=fitbiter, date__gte=last_sync).order_by('-date')
+
 			for f in fitdata:
 				fitdata_list.append((f.date, fitrunner, f)) 
 
-		##Do I need this sort or can I just add order_by as above
+##Does this work?
+			mappedrte=FitMappedRte.objects.filter(fitrunner=fitrunner,fitroute=fitroute,date__lt=last_sync).order_by('date')
+			mappedrte_list.extend(mappedrte)
+		
+		#Orders the list by fitrunner by date
 		fitdata_list.sort(key=lambda x:x[0])
-		
 
-		##Need to check this and rewrite!
-		##Gets all mapped rtes, except the initial
-		mappedrte_all=FitMappedRte.objects.filter(fitroute=fitroute,date__lt=last_update).order_by('order')
-		if mappedrte_all:
-			last_order_num=mappedrte_all.reverse()[0].order
-		else:
-			last_order_num=0
-		
-		##Data for Stacked Bar Chart
-		dates=fitdata.values_list('date', flat=True).order_by('-date').distinct() ##Need to include order_by for database????
-		mapped_dates=mappedrte_all.values_list('date', flat=True).order_by('-date').distinct()
-		mapped_fitdata=FitData.objects.filter(fitbiter__in=fitbiters, date__in=mapped_dates)
-		
+		#Data for Stacked Bar Chart
+		dates=fitdata_all.values_list('date', flat=True).order_by('-date').distinct() ##Need to include order_by for database????
+
 		data_table=[]
 		for d in dates:
 			dt=[d]
 			dt.extend(fitdata_all.filter(date=d).values_list('distance', flat=True).order_by('fitbiter'))
 			data_table.append(dt)
 
-		for m in mapped_dates:
-			mt=[m]
-			mt.extend(mapped_fitdata.filter(date=m).values_list('distance', flat=True).order_by('fitbiter'))
-			data_table.append(mt)
-
 		context['fitrunners']=list(fitrunners)
 		context['data_table']=data_table
-
-		context['order']=last_order_num
 		context['fitdata_list']=fitdata_list
-		context['mappedrte_all'] = mappedrte_all
+		context['mappedrte_list'] = mappedrte_list
 		context['fitroute']=fitroute
-		#context['waypoints']=fitroute.waypoints.all().order_by('order')[fitroute.num_complete_waypt:]
 		context['API_KEY']=settings.API_KEY
 		return context
 
@@ -200,10 +181,6 @@ def SaveMappedRoute(request):
 	fitrunner_pk=request.GET.get('fitrunner')
 	strokecolor=request.GET.get('strokecolor')
 	data_date=request.GET.get('date')
-	order=int(request.GET.get('order'))
-	order=order+1 ##increment order number before saving
-	#num_complete_waypt=int(request.GET.get('num_complete_waypt'))
-	
 
 	fitroute=FitRoute.objects.get(pk=fitroute_pk)	
 	fitrunner=FitRunner.objects.get(pk=fitrunner_pk)
@@ -222,7 +199,6 @@ def SaveMappedRoute(request):
 							fitrunner=fitrunner,
 							date=data_date,
 							maprtedata=encodedPath,
-							order=order,
 						)
 	fitmappedrte.save()
 	
