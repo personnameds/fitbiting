@@ -8,7 +8,7 @@ from oauth2.views import GetFitbitData
 from fitbiters.models import Fitbiter
 from fitdata.models import FitData
 from fitdata.forms import FitDataForm
-from fitmap.models import FitRoute, FitMappedRte
+from fitmap.models import FitRoute
 
 import datetime
 
@@ -32,8 +32,8 @@ class FitDataIndexView(FormView):
 		
 ##Downloads data from Fitbit
 ##Also updates keys etc.	
-def UpdateFitbitDataFunc(fitbiter):
-	activity_data=GetFitbitData(fitbiter)
+def UpdateFitbitDataFunc(fitbiter, update_date):
+	activity_data=GetFitbitData(fitbiter, update_date)
 	
 	distance_by_date=activity_data['activities-distance']
 	for i in distance_by_date:
@@ -59,15 +59,16 @@ class FitDataDisplayView(TemplateView):
 
 		##for fitbiter_id in fitbiter_ids:
 		fitbiters=Fitbiter.objects.filter(pk__in=fitbiter_ids)
-			
-		for fitbiter in fitbiters:
-			UpdateFitbitDataFunc(fitbiter)
-		
+
 		today = datetime.date.today()
 ##If Fitbiter has less than num of days selected will cut of newest dates
 
 		ago = today - datetime.timedelta(days=(num_days-1))
+			
+		for fitbiter in fitbiters:
+			UpdateFitbitDataFunc(fitbiter, ago)
 		
+
 		fitdata=FitData.objects.filter(fitbiter__in=fitbiters, date__gte=ago).order_by('date')
 		
 		fitdata_list=[]

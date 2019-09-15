@@ -1,14 +1,17 @@
+Streamline and ensure accuracy of calculations, do it myself
+	Use Distance for each step which is embedded in Directions API for distance calculations 
+	https://developers.google.com/maps/documentation/directions/intro#DirectionsResponses
+	There are way more functions and helpers. I know there is a better way to calculate
+	Display Boundary
+	Markers
+
 Homepage make datadashbaord or something
 
 Security and Login 
 	Tie Fitbit Data to Login 
-	Display route choices based on who is logged in
+	Display route shoices based on who is logged in
 
-Streamline and ensure accuracy of calculations, do it myself
-	Use Distance for each step which is embedded in Directions API for distance calculations 
-	https://developers.google.com/maps/documentation/directions/intro#DirectionsResponses
-	Display Boundary
-	Markers
+
 
 If second runner has zero data, then line gets screwed up, whole z++ thing
 

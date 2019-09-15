@@ -14,38 +14,18 @@ import json
 
 import os
 
-def GetFitbitData(fitbiter):
-	activity_data=GetDataUsingAccessToken(fitbiter) 
+def GetFitbitData(fitbiter, update_date):
+	activity_data=GetDataUsingAccessToken(fitbiter, update_date) 
 	return activity_data
     
-def GetDataUsingAccessToken(fitbiter):
+def GetDataUsingAccessToken(fitbiter, update_date):
 
-	#Get last_sync
-	FitbitDeviceURL='https://api.fitbit.com/1/user/'+fitbiter.fitbit_id+'/devices.json'
-	
-	devicereq=urllib.request.Request(FitbitDeviceURL)
-	devicereq.add_header('Authorization', 'Bearer ' + fitbiter.access_token)
-	
-	deviceresponse=urllib.request.urlopen(devicereq)
-	deviceFullResponse=deviceresponse.read()
-	deviceResponseJSON = json.loads(deviceFullResponse)
-	
-	device_data=deviceResponseJSON
-	
-	#Updates last sync
-	#Not sure what will happen if more than one device
-	for d in device_data:
-		last_sync=d['lastSyncTime']
-		formatted_last_sync=datetime.strptime(last_sync, '%Y-%m-%dT%H:%M:%S.%f')
-		fitbiter.last_sync=formatted_last_sync
-		fitbiter.save()
-	
-	last_date=formatted_last_sync.strftime("%Y-%m-%d")
-
-#	last_date=FitData.objects.filter(fitbiter=fitbiter).latest('date').date
-	FitData.objects.filter(fitbiter=fitbiter, date=last_date).delete()
-#	last_date=last_date.strftime("%Y-%m-%d")
-	
+	#Erase the data from that date
+	#Then get new data from the date and beyond
+	FitData.objects.filter(fitbiter=fitbiter, date__gte=update_date).delete()
+	last_date=update_date.strftime("%Y-%m-%d")
+		
+	#The URL to get the Data
 	FitbitURL='https://api.fitbit.com/1/user/'+fitbiter.fitbit_id+'/activities/distance/date/'+last_date+'/today.json'
     
 	req=urllib.request.Request(FitbitURL)
@@ -126,7 +106,7 @@ def Oauth2View(request):
 	redirect_uri=REDIRECT_URI
 		
 	redirect_uri=urllib.parse.quote(redirect_uri, safe='')
-	authorize_url='https://www.fitbit.com/oauth2/authorize?response_type=code&client_id=22CVHF&redirect_uri='+redirect_uri+'&scope=activity%20settings&expires_in=604800'
+	authorize_url='https://www.fitbit.com/oauth2/authorize?response_type=code&client_id=22CVHF&redirect_uri='+redirect_uri+'&scope=activity&expires_in=604800'
 	return HttpResponseRedirect(authorize_url)
 
 def Oauth2CallBackView(request):
@@ -215,25 +195,6 @@ def Oauth2CallBackView(request):
 				distance=i['value'],
 				)
 		fitdata.save()
-	
-	##Get Initial FitbitDeviceInfo
-	FitbitDeviceURL='https://api.fitbit.com/1/user/'+fitbiter.fitbit_id+'/devices.json'
-	
-	devicereq=urllib.request.Request(FitbitDeviceURL)
-	devicereq.add_header('Authorization', 'Bearer ' + fitbiter.access_token)
-	
-	deviceresponse=urllib.request.urlopen(devicereq)
-	deviceFullResponse=deviceresponse.read()
-	deviceResponseJSON = json.loads(deviceFullResponse)
-	
-	device_data=deviceResponseJSON
-	
-	#Not sure what will happen if more than one device
-	for d in device_data:
-		last_sync=d['lastSyncTime']
-		formatted_last_sync=datetime.strptime(last_sync, '%Y-%m-%dT%H:%M:%S.%f')
-		fitbiter.last_sync=formatted_last_sync
-		fitbiter.save()
 		
 	##Stupid hack as needs to be iterable for FitData to Display
 	fitbiter_ids=[]

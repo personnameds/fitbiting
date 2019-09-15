@@ -22,14 +22,3 @@ class FitRunner(models.Model):
 	
 	def __str__(self):
 		return '%s in %s' %(self.fitbiter.fitbit_id, self.fitroute)
-
-class FitMappedRte(models.Model):
-	fitrunner=models.ForeignKey(FitRunner, on_delete=models.CASCADE)
-	fitroute=models.ForeignKey(FitRoute, on_delete=models.CASCADE)
-	date=models.DateField()
-	maprtedata=models.TextField() 
-	
-	def __str__(self):
-		return '%s on %s for %s' %(self.fitroute.title, self.date, self.fitrunner.fitbiter.fitbit_id)
-	
-	
