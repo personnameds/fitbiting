@@ -121,93 +121,119 @@
 				var i=0
 				var last_i=0;
 				var runPath=[];
-				var stopPathTo_dist;
-				var sum_dist_steps;
+				var stopPath_dist;
 
 				{% for fitdate, fitrunner, fitdata in fitdata_list %}
 					//Each fitbiter, each date how far they ran
 					var dist_ran={{fitdata.distance}}*1000;
-					
-					//IF stop PathTo has value
-					if (stopPathTo_dist) {
-						//Get points for stop spot up to next step
-						if (stopPathTo_dist < dist_ran) {
-							//If the PathTo distance is less than the dist_ran 	
-							//Add the distance left to the sum_dist_steps
-							//Add the points to runPath
-							//Do as usual					
-							sum_dist_steps = stopPathTo_dist;
-							for (j=0; j < stopPath.pathFrom.length; j++) {
-								runPath.push(stopPath.pathFrom[j]);
-							} //stopPathTo loop	
+console.log('{{fitrunner}}');
+					//Check if they have run today
+					if (dist_ran > 0) {
+						//IF stop PathTo has value
+						if (stopPath_dist) {
+							//Get points for stop spot up to next step
+							if (stopPath_dist < dist_ran) {
+								//If the PathTo distance is less than the dist_ran 	
+								//Add the distance left to the sum_dist_steps
+								//Add the PathFrom to runPath				
+								sum_dist_steps = stopPath_dist;
+								along_stopPathFrom=false;
+								for (l=0; l < stopPath.pathFrom.length; l++) {
+									runPath.push(stopPath.pathFrom[l]);
+								} //stopPathTo loop	
+console.log('PathFrom added - stopPath_dist:'+l);
+							} else if (stopPath_dist >= dist_ran) {
+								//Needs to stop somewhere along stopPathFrom 
+								sum_dist_steps = stopPath_dist;
+								along_stopPathFrom=true;
+							}						
 						} else {
-							//PathTo distance is greater than or equal to dist_ran
-							//Sum_dist_steps = dist but greater than dist_ran 
-							//Skips loop but so far has no runPath		
-							sum_dist_steps = stopPathTo_dist;
-						}
-					} else {
-						// first loop no stopPathTo_dist
-						sum_dist_steps = 0;
-					}				
+							// first loop no stopPathTo_dist
+							var sum_dist_steps = 0;
+							var along_stopPathFrom=false;
+						}				
+console.log('Dist_Ran:'+dist_ran+' stopPath:'+stopPath_dist+' along_stopPath:'+along_stopPathFrom);
+						while (sum_dist_steps < dist_ran) {
+							sum_dist_steps += route.steps[i].distance.value;
+console.log('i:'+i+' sum_dist:'+sum_dist_steps+' dist_ran:'+dist_ran);
+							i++;
+						} // while dist_steps
 					
-					while (sum_dist_steps < dist_ran) {
-					
-						sum_dist_steps += route.steps[i].distance.value;
-						i++;
-					} // while dist_steps
-					
-					//Create Array of LatLngs from Steps with less distance than distance ran
-					// -2 because -1 is for the i++ other -1 is because last step went to far 
-					//then + 1 because loop j starts at 0 or last_i which is equivalent to zero
-					//Loop through steps
-					for (j=last_i; j < i - 1; j++) {
-						stepPath=route.steps[j].path
-						//Loop through points
-						for (k=0; k < stepPath.length; k++) {
-							runPath.push(stepPath[k]);
-						}
-					} 
-
-					//Find the exact stop point and the path up to that point
-					var stepPoly = new google.maps.Polyline({
-						path: route.steps[i-1].path,
-					});
-
-					var distanceThisStep = route.steps[i-1].distance.value;
-					var stopPath = stepPoly.GetPointAtDistance(distanceThisStep - (sum_dist_steps - dist_ran));
-					if (stopPath == null) {
-						console.log("stepPoly.GetPointAtDistance(" + distanceThisStep + ") returns null");
-						return;
-					} //if stopPath == Null
+						//Create Array of LatLngs from Steps with less distance than distance ran
+						// -2 because -1 is for the i++ other -1 is because last step went to far 
+						//then + 1 because loop j starts at 0 or last_i which is equivalent to zero
+						//Loop through steps
+console.log('Out - i:'+i+' sum_dist:'+sum_dist_steps+' dist_ran:'+dist_ran+' stepLength:'+route.steps[i-1].distance.value);					
+						for (j=last_i; j < i - 1; j++) {
+console.log('j:'+j);
+							stepPath=route.steps[j].path
+							//Loop through points
+							for (k=0; k < stepPath.length; k++) {
+								runPath.push(stepPath[k]);
+							}
+						} 
+console.log(along_stopPathFrom);
+						if (along_stopPathFrom==false) { 
+							//Regular stopPoint finding
+							//Find the exact stop point and the path up to that point
+							var stepPoly = new google.maps.Polyline({
+								path: route.steps[i-1].path,
+							});
 				
-					//Get points for last step up to stop point
-					for (j=0; j < stopPath.pathTo.length; j++) {
-						runPath.push(stopPath.pathTo[j]);
-					} //stopPath loop
-
-					//Add the stop point
-					runPath.push(stopPath.point);
-
-					var polyline_runPath = new google.maps.Polyline({
-						path: runPath,
-						strokeColor: '{{fitrunner.colour}}',
-						strokeWeight:4
-						});
-					polyline_runPath.setMap(map);
-
+							var distanceThisStep = route.steps[i-1].distance.value;
+							var stopPath = stepPoly.GetPointAtDistance(distanceThisStep - (sum_dist_steps - dist_ran));
+console.log('stopPath - i:'+i+' distanceThisStep:'+distanceThisStep);
+							if (stopPath == null) {
+								console.log("stepPoly.GetPointAtDistance(" + distanceThisStep + ") returns null");
+								return;
+							} //if stopPath == Null
+							//Get points for last step up to stop point
+							for (j=0; j < stopPath.pathTo.length; j++) {
+								runPath.push(stopPath.pathTo[j]);
+							} //stopPath loop	
+						
+							stopPath_dist = sum_dist_steps - dist_ran;			
 					
-					if ('{{fitdate}}' == '{{today}}') {
-						if (!first_boundary) {
-							var first_boundary=runPath[0];
-						}
-					}
+						} else {
+							//Short route finding Stop point on the PathFrom
+							var stepPoly = new google.maps.Polyline({
+								path: stopPath.pathFrom,
+							});
+console.log('stepPoly - dist_ran:'+dist_ran);
+							var stopPath = stepPoly.GetPointAtDistance(dist_ran);
+							if (stopPath == null) {
+								console.log("stepPoly.GetPointAtDistance(" + dist_ran + ") returns null");
+								return;
+							} //if stopPath == Null	
 
-					//Prepare for next fitrunner
-					last_i=i;
-					runPath.length=0;
-					stopPathTo_dist = distanceThisStep-(sum_dist_steps - dist_ran);
-	
+							for (j=0; j < stopPath.pathTo.length; j++) {
+								runPath.push(stopPath.pathTo[j]);
+							} //stopPath loop	
+						
+							stopPath_dist = sum_dist_steps - dist_ran;
+						} //if along_stopPathTo
+console.log('End '+stopPath_dist);				
+						//Add the stop point
+						runPath.push(stopPath.point);
+
+						var polyline_runPath = new google.maps.Polyline({
+							path: runPath,
+							strokeColor: '{{fitrunner.colour}}',
+							strokeWeight:4
+							});
+						polyline_runPath.setMap(map);
+
+						if ('{{fitdate}}' == '{{today}}') {
+							if (!first_boundary) {
+								var first_boundary=runPath[0];
+							}
+						}
+
+						//Prepare for next fitrunner
+						last_i=i;
+						runPath.length=0;
+
+					} //if dist_ran > 0;
 				{% endfor %} //for fitdata_list
 				
 				var last_boundary=stopPath.point;
@@ -271,6 +297,8 @@ function installEpoly() {
 	   var dist = 0;
 	   var olddist = 0;
 	   var i;
+console.log('metres:'+metres+' PathLength:'+this.getPath().getLength());
+
 	   for (i = 1;
 		 (i < this.getPath().getLength() && dist < metres); i++) {
 		 olddist = dist;
