@@ -57,6 +57,28 @@ def GetDataUsingAccessToken(fitbiter, update_date):
 
 
 def GetNewAccessandRefreshToken(fitbiter):
+
+	BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+	CLIENT_DIRECTORY=os.path.join(BASE_DIR,'fitbiting')+'/CLIENT_ID'
+	with open(CLIENT_DIRECTORY) as f:
+		CLIENT_ID = f.read().strip()
+
+	CLIENT_DIRECTORY=os.path.join(BASE_DIR,'fitbiting')+'/CLIENT_SECRET'
+	with open(CLIENT_DIRECTORY) as f:
+		CLIENT_SECRET = f.read().strip()
+
+	CLIENT_DIRECTORY=os.path.join(BASE_DIR,'fitbiting')+'/REDIRECT_URI'
+	with open(CLIENT_DIRECTORY) as f:
+		REDIRECT_URI = f.read().strip()
+
+	client_id=CLIENT_ID
+	client_secret=CLIENT_SECRET
+	redirect_uri=REDIRECT_URI
+
+	token_url='https://api.fitbit.com/oauth2/token'
+
+
 	##Use Refresh token to get new  access token
 	BodyText={'refresh_token': fitbiter.refresh_token,
 			  'grant_type':'refresh_token',
@@ -129,8 +151,6 @@ def Oauth2CallBackView(request):
 	client_id=CLIENT_ID
 	client_secret=CLIENT_SECRET
 	redirect_uri=REDIRECT_URI
-
-
 
 	token_url='https://api.fitbit.com/oauth2/token'
 	

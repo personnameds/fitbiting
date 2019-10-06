@@ -1,26 +1,18 @@
-Streamline and ensure accuracy of calculations, do it myself
-	Use Distance for each step which is embedded in Directions API for distance calculations 
-	https://developers.google.com/maps/documentation/directions/intro#DirectionsResponses
-	There are way more functions and helpers. I know there is a better way to calculate
-	Display Boundary
-	Markers
-
-Homepage make datadashbaord or something
-
 Security and Login 
 	Tie Fitbit Data to Login 
 	Display route shoices based on who is logged in
 
-
-
-If second runner has zero data, then line gets screwed up, whole z++ thing
+Homepage make datadashbaord or something
 
 Colour Choice for Fitbiters
 	More then 8 runners will give error for stroke colour choice in creat4
 
+FinishedRoute
+
 How much does it cost on Google API
 	How many API calls does Create make
 	How many API calls does Display make
+	Streamline and minimize Google Api usage
 
 Fitdata Graphs, use calendar to pick dates
 	Needs to catch if Fitbiter doesn't have data from those dates, based on last_sync
@@ -29,15 +21,8 @@ Create route make choosing of Fitbiters Dynamic
 	
 Create map using mouse drag
 
-Streamline and minimize Google Api usage
-
 Side Bar of Map
 	Code duplication between MapDisplay and Sidebar Graph
 	
 CreateRoute 
 	Save Validation Error does not display using Crispy Forms
-
-Encoded Data
-	Do I need?
-	Can I post instead of get
-	
