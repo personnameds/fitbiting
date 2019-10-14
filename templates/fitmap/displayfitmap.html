@@ -234,9 +234,14 @@ console.log('End '+stopPath_dist);
 						runPath.length=0;
 
 					} //if dist_ran > 0;
+					
+					
 				{% endfor %} //for fitdata_list
 				
-				var last_boundary=stopPath.point;
+				if(first_boundary == null) {
+					first_boundary=route.steps[0].path[0];
+				} //If all runners distance = 0
+				var last_boundary=stopPath.point; //May break if initial setup all runners are zero
 				var bounds=new google.maps.LatLngBounds();
 				bounds.extend(first_boundary);
 				bounds.extend(last_boundary);
