@@ -1,7 +1,8 @@
 from django.http import HttpResponseRedirect
 from django.shortcuts import redirect
-from fitbiters.models import Fitbiter
-from fitdata.models import FitData
+from .models import Platform
+from runners.models import Fitbiter, Runner, Stravaer
+from rundata.models import RunData
 from django.conf import settings
 from django.db import IntegrityError
 from django.urls import reverse
@@ -14,90 +15,192 @@ import json
 
 import os
 
-def GetFitbitData(fitbiter, update_date):
-	activity_data=GetDataUsingAccessToken(fitbiter, update_date) 
-	return activity_data
+def UpdateRunData(runner, update_date):
+	GetDataUsingAccessToken(runner, update_date) 
+	return
     
-def GetDataUsingAccessToken(fitbiter, update_date):
+def GetDataUsingAccessToken(runner, update_date):
 
 	#Erase the data from that date
 	#Then get new data from the date and beyond
-	FitData.objects.filter(fitbiter=fitbiter, date__gte=update_date).delete()
+	RunData.objects.filter(runner=runner, date__gte=update_date).delete()
 	last_date=update_date.strftime("%Y-%m-%d")
-		
-	#The URL to get the Data
-	FitbitURL='https://api.fitbit.com/1/user/'+fitbiter.fitbit_id+'/activities/distance/date/'+last_date+'/today.json'
-    
-	req=urllib.request.Request(FitbitURL)
 	
-	req.add_header('Authorization', 'Bearer ' + fitbiter.access_token)
+	##Fitbit
+	if runner.platform.name == 'Fitbit':
+		fitbiter=Fitbiter.objects.get(runner=runner)
 	
-	try:
-		response=urllib.request.urlopen(req)
-		
-		FullResponse=response.read()
-		
-		ResponseJSON = json.loads(FullResponse)
+		FitbitURL='https://api.fitbit.com/1/user/'+fitbiter.fitbit_id+'/activities/distance/date/'+last_date+'/today.json'
+		req=urllib.request.Request(FitbitURL)
+		req.add_header('Authorization', 'Bearer ' + fitbiter.access_token)
+	
+		try:
+			response=urllib.request.urlopen(req)
+			FullResponse=response.read()
+			activity_data = json.loads(FullResponse)
+			distance_by_date=activity_data['activities-distance']
+			for i in distance_by_date:
+				rundata=RunData(runner=runner,
+					date=i['dateTime'],
+					distance=i['value'],
+					)
+				rundata.save()	
+			return
+		except urllib.request.URLError as e:
+			HTTPErrorMessage=str(e.read())
+			##If Access token Expired
+			if (e.code==401) and (HTTPErrorMessage.find("Access token expired") > 0):
+				GetNewAccessandRefreshToken(runner, update_date)
+			## Some other error
+			else:
+				print(e.code)
+				print(e.read())
+				return False
 
-		return ResponseJSON
-	
-	except urllib.request.URLError as e:
+	##Strava
+	elif runner.platform.name == 'Strava':
 
-		HTTPErrorMessage=str(e.read())
+		stravaer=Stravaer.objects.get(runner=runner)
+
+		StravaURL='https://www.strava.com/api/v3/athlete/activities'
+		req=urllib.request.Request(StravaURL)
+		req.add_header('Authorization', 'Bearer ' + stravaer.access_token)
 		
-		##If Access token Expired
-		if (e.code==401) and (HTTPErrorMessage.find("Access token expired") > 0):
-			GetNewAccessandRefreshToken(fitbiter)
+		try:
+			response=urllib.request.urlopen(req)
+			FullResponse=response.read()
+			ResponseJSON=json.loads(FullResponse)
+			for activity_data in ResponseJSON:
+				distance=activity_data['distance']/1000
+				date=datetime.strptime(activity_data['start_date_local'],"%Y-%m-%dT%H:%M:%SZ")
+				if date.date() >= update_date:
+					rundata=RunData(runner=runner,
+						date=date.date(),
+						distance=distance,
+						)
+					rundata.save()
+		except urllib.request.URLError as e:
+			HTTPErrorMessage=str(e.read())
+			##If Access token Expired
+			if (e.code==401) and (HTTPErrorMessage.find("Authorization Error") > 0):
+				GetNewAccessandRefreshToken(runner, update_date)
+			## Some other error
+			else:
+				print(HTTPErrorMessage)
+				return False
+
+def GetNewAccessandRefreshToken(runner, update_date):
+	platform=Platform.objects.get(id=runner.platform.id)
+	client_id=platform.client_id
+	client_secret=platform.client_secret
+
+	if platform.name == 'Fitbit':
+		token_url='https://api.fitbit.com/oauth2/token'
+
+		fitbiter=runner.fitbiter
+		
+		##Use Refresh token to get new  access token
+		BodyText={'refresh_token': fitbiter.refresh_token,
+				  'grant_type':'refresh_token',
+				  'expires_in':2592000,
+				  }
+		BodyURLEncoded=urllib.parse.urlencode(BodyText).encode('utf-8')
 	
-		## Some other error
-		else:
+		req=urllib.request.Request(token_url,BodyURLEncoded)
+
+		base64string=str(client_id + ':' + client_secret)
+		base64string=bytes(base64string, 'utf-8')
+
+		base64string=base64.b64encode(base64string)
+		base64string=base64string.decode('utf-8')
+		autho='Basic ' + base64string
+
+		req.add_header('Authorization', autho)
+		req.add_header('Content-Type', 'application/x-www-form-urlencoded')
+
+		try:
+			response=urllib.request.urlopen(req)
+			FullResponse=response.read()
+		except urllib.request.URLError as e:
 			print(e.code)
 			print(e.read())
-			return False
 
+		## Access and Refresh Token Received
+		## Saving tokens to model
+		ResponseJSON = json.loads(FullResponse)
 
-def GetNewAccessandRefreshToken(fitbiter):
+		fitbiter.access_token = str(ResponseJSON['access_token'])
+		fitbiter.refresh_token = str(ResponseJSON['refresh_token'])
+		fitbiter.save()
 
-	BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+	elif platform.name=='Strava':
+		token_url='https://www.strava.com/api/v3/oauth/token'
+		
+		stravaer=runner.stravaer
 
-	CLIENT_DIRECTORY=os.path.join(BASE_DIR,'fitbiting')+'/CLIENT_ID'
-	with open(CLIENT_DIRECTORY) as f:
-		CLIENT_ID = f.read().strip()
-
-	CLIENT_DIRECTORY=os.path.join(BASE_DIR,'fitbiting')+'/CLIENT_SECRET'
-	with open(CLIENT_DIRECTORY) as f:
-		CLIENT_SECRET = f.read().strip()
-
-	CLIENT_DIRECTORY=os.path.join(BASE_DIR,'fitbiting')+'/REDIRECT_URI'
-	with open(CLIENT_DIRECTORY) as f:
-		REDIRECT_URI = f.read().strip()
-
-	client_id=CLIENT_ID
-	client_secret=CLIENT_SECRET
-	redirect_uri=REDIRECT_URI
-
-	token_url='https://api.fitbit.com/oauth2/token'
-
-
-	##Use Refresh token to get new  access token
-	BodyText={'refresh_token': fitbiter.refresh_token,
+		##Use Refresh token to get new  access token
+		BodyText={'client_id': client_id,
+			  'client_secret': client_secret,
 			  'grant_type':'refresh_token',
-			  'expires_in':2592000,
+			  'refresh_token':stravaer.refresh_token,
 			  }
-	BodyURLEncoded=urllib.parse.urlencode(BodyText).encode('utf-8')
+		BodyURLEncoded=urllib.parse.urlencode(BodyText).encode()
+		req=urllib.request.Request(token_url,BodyURLEncoded)	
+		try:
+			response=urllib.request.urlopen(req)
+			FullResponse=response.read()
+			print('Strava Refresh Token Success')
+		except urllib.request.URLError as e:
+			print('Strava Refresh Token Error')
+			print(e.code)
+			print(e.read())
+			
+		## Access and Refresh Token Received
+		## Saving tokens to model
+		ResponseJSON = json.loads(FullResponse)
+
+		stravaer.access_token = str(ResponseJSON['access_token'])
+		stravaer.refresh_token = str(ResponseJSON['refresh_token'])
+		stravaer.save()
+		
+	GetDataUsingAccessToken(runner, update_date)
+
+##New User
+def NewRunnerView(request, platform_id):
+
+	platform=Platform.objects.get(id=platform_id)
+	client_id=platform.client_id
+	redirect_uri=platform.redirect_uri
+		
+	redirect_uri=urllib.parse.quote(redirect_uri, safe='')
+	
+	if platform.name == 'Fitbit':	
+		authorize_url='https://www.fitbit.com/oauth2/authorize?response_type=code&client_id='+client_id+'&redirect_uri='+redirect_uri+'&scope=activity&expires_in=86400'
+	elif platform.name == 'Strava':
+		authorize_url='https://www.strava.com/oauth/authorize?client_id='+client_id+'&response_type=code&redirect_uri='+redirect_uri+'&approval_prompt=auto&scope=activity:read_all'
+	return HttpResponseRedirect(authorize_url)
+
+def StravaCallBackView(request):
+
+	platform=Platform.objects.get(name='Strava')
+	client_id=platform.client_id
+	client_secret=platform.client_secret
+	redirect_uri=platform.redirect_uri
+
+	token_url='https://www.strava.com/api/v3/oauth/token'
+	
+	code=request.GET.get('code')
+	
+	##To Get Access and Refresh Token
+	BodyText={'code':code,
+			  'client_id': client_id,
+			  'client_secret': client_secret,
+			  'grant_type':'authorization_code',
+			  }
+	BodyURLEncoded=urllib.parse.urlencode(BodyText).encode()
 	
 	req=urllib.request.Request(token_url,BodyURLEncoded)
-
-	base64string=str(client_id + ':' + client_secret)
-	base64string=bytes(base64string, 'utf-8')
-
-	base64string=base64.b64encode(base64string)
-	base64string=base64string.decode('utf-8')
-	autho='Basic ' + base64string
-
-	req.add_header('Authorization', autho)
-	req.add_header('Content-Type', 'application/x-www-form-urlencoded')
-
+	
 	try:
 		response=urllib.request.urlopen(req)
 		FullResponse=response.read()
@@ -105,52 +208,56 @@ def GetNewAccessandRefreshToken(fitbiter):
 	except urllib.request.URLError as e:
 		print(e.code)
 		print(e.read())
-
+		
 	## Access and Refresh Token Received
 	## Saving tokens to model
 	ResponseJSON = json.loads(FullResponse)
 
-	fitbiter.access_token = str(ResponseJSON['access_token'])
-	fitbiter.refresh_token = str(ResponseJSON['refresh_token'])
-	fitbiter.save()
+	runner=Runner.objects.get(user=request.user)
 
-	GetDataUsingAccessToken(fitbiter)
+	athlete=ResponseJSON['athlete']
+	strava_id=athlete['id']
 
-##New User
-def Oauth2View(request):
+	stravaer=Stravaer(runner=runner,
+				      strava_id=str(strava_id),
+					  access_token=str(ResponseJSON['access_token']),
+					  refresh_token=str(ResponseJSON['refresh_token']),
+					  )
+	stravaer.save()
+
+	##Get Initial FitbitData
+	StravaURL='https://www.strava.com/api/v3/athlete/activities'
+	req=urllib.request.Request(StravaURL)
+	req.add_header('Authorization', 'Bearer ' + stravaer.access_token)
 	
-	BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-	
-	CLIENT_DIRECTORY=os.path.join(BASE_DIR,'fitbiting')+'/REDIRECT_URI'
-	with open(CLIENT_DIRECTORY) as f:
-		REDIRECT_URI = f.read().strip()
-	
-	redirect_uri=REDIRECT_URI
+	try:
+		response=urllib.request.urlopen(req)
+		FullResponse=response.read()
+	except urllib.request.URLError as e:
+		print(e.code)
+		print(e.read())
 		
-	redirect_uri=urllib.parse.quote(redirect_uri, safe='')
-	authorize_url='https://www.fitbit.com/oauth2/authorize?response_type=code&client_id=22CVHF&redirect_uri='+redirect_uri+'&scope=activity&expires_in=604800'
-	return HttpResponseRedirect(authorize_url)
+	ResponseJSON = json.loads(FullResponse)
 
-def Oauth2CallBackView(request):
-	
-	BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+	for activity_data in ResponseJSON:
+		distance=activity_data['distance']/1000
+		date=datetime.strptime(activity_data['start_date_local'],"%Y-%m-%dT%H:%M:%SZ")
+		rundata=RunData(runner=runner,
+			date=date.date(),
+			distance=distance,
+			)
+		rundata.save()
+ 
+	#Displays the runners data	
+	return redirect(reverse('rundata-display', kwargs={'runner_ids':[runner.pk,],'num_days':5}))
 
 
-	CLIENT_DIRECTORY=os.path.join(BASE_DIR,'fitbiting')+'/CLIENT_ID'
-	with open(CLIENT_DIRECTORY) as f:
-		CLIENT_ID = f.read().strip()
+def FitbitCallBackView(request):
 
-	CLIENT_DIRECTORY=os.path.join(BASE_DIR,'fitbiting')+'/CLIENT_SECRET'
-	with open(CLIENT_DIRECTORY) as f:
-		CLIENT_SECRET = f.read().strip()
-
-	CLIENT_DIRECTORY=os.path.join(BASE_DIR,'fitbiting')+'/REDIRECT_URI'
-	with open(CLIENT_DIRECTORY) as f:
-		REDIRECT_URI = f.read().strip()
-
-	client_id=CLIENT_ID
-	client_secret=CLIENT_SECRET
-	redirect_uri=REDIRECT_URI
+	platform=Platform.objects.get(name='Fitbit')
+	client_id=platform.client_id
+	client_secret=platform.client_secret
+	redirect_uri=platform.redirect_uri
 
 	token_url='https://api.fitbit.com/oauth2/token'
 	
@@ -180,9 +287,7 @@ def Oauth2CallBackView(request):
 	try:
 		response=urllib.request.urlopen(req)
 		FullResponse=response.read()
-		
-		print(FullResponse)
-		
+
 	except urllib.request.URLError as e:
 		print(e.code)
 		print(e.read())
@@ -191,7 +296,10 @@ def Oauth2CallBackView(request):
 	## Saving tokens to model
 	ResponseJSON = json.loads(FullResponse)
 
-	fitbiter=Fitbiter(fitbit_id=str(ResponseJSON['user_id']),
+	runner=Runner.objects.get(user=request.user)
+
+	fitbiter=Fitbiter(runner=runner,
+				      fitbit_id=str(ResponseJSON['user_id']),
 					  access_token=str(ResponseJSON['access_token']),
 					  refresh_token=str(ResponseJSON['refresh_token']),
 					  )
@@ -210,15 +318,11 @@ def Oauth2CallBackView(request):
 	activity_data=ResponseJSON
 	distance_by_date=activity_data['activities-distance']
 	for i in distance_by_date:
-		fitdata=FitData(fitbiter=fitbiter,
+		rundata=RunData(runner=runner,
 				date=i['dateTime'],
 				distance=i['value'],
 				)
-		fitdata.save()
-		
-	##Stupid hack as needs to be iterable for FitData to Display
-	fitbiter_ids=[]
-	fitbiter_ids.append(fitbiter.pk)
-	
-	#Displays the fitbiters data
-	return redirect(reverse('fitdata-display', kwargs={'fitbiter_ids':fitbiter_ids,'num_days':5}))
+		rundata.save()
+
+	#Displays the runners data	
+	return redirect(reverse('rundata-display', kwargs={'runner_ids':[runner.pk,],'num_days':5}))

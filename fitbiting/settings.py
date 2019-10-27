@@ -38,10 +38,11 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'fitbiters.apps.FitbitersConfig',
+    'runners.apps.RunnersConfig',
+    'oauth2.apps.Oauth2Config',
     'homepage.apps.HomepageConfig',
-    'fitdata.apps.FitdataConfig',
-    'fitmap.apps.FitmapConfig',
+    'rundata.apps.RundataConfig',
+    'runmap.apps.RunmapConfig',    
     'crispy_forms',
 ]
 

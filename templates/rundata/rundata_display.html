@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block head_content %}
+<!-- Load the AJAX API -->
+<script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+<script async type="text/javascript">
+	
+	// Load the Visualizations API and the corechart package
+	google.charts.load('current', {'packages':['corechart']});
+	
+	// Set a callback to run when the Google Visualization API is loaded
+	google.charts.setOnLoadCallback(drawLineGraph);
+	
+	// Creates the chart and passes the data
+	function drawLineGraph() {
+		
+		//Create the data table
+		 var data = google.visualization.arrayToDataTable([
+			 
+			 ['Date',
+			 {% for r in runners %}
+				'{{r.user.username}}',
+			 {% endfor %}
+			 ],
+			 
+			 {% for data in data_table %}
+				{% for d in data %}
+					{% if forloop.first %}
+						['{{d|date:"D M d"}}',
+					{% else %}
+						{{d}},
+					{% endif %}
+				{% endfor %}
+				],
+			 {% endfor %}
+		  ]);
+		
+		var options = {
+			title: 'From {{ago|date:"l, F dS"}} until {{today|date:"l, F dS"}}',
+			vAxis: { title: "Distance (KM)" },
+			};
+		
+		// Instantiate and draw the chart.
+		var chart = new google.visualization.LineChart(document.getElementById('chart_div'));
+
+		chart.draw(data, options);
+	}
+</script>
+
+<style>
+	/* Needed for crispy-forms to show error message */
+	/* This is a crispy-form, bootstrap 4 package error */
+	.invalid-feedback {
+		display: block;
+	}
+</style>
+
+{% endblock %}
+
+{% block main_content %}
+	<h1>Run Data</h1>
+	<div id="chart_div" style="width: 900px; height: 500px"></div>
+{% endblock %}
+

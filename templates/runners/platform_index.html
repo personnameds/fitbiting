@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+
+{% block main_content %}
+	<h1>New Runner</h1>
+	<p class='lead'>How do you track your data? Click on the button and join. You will need the login information for that device. This app will 
+	not know or save any of your personal data. It will only download dates, distances and your username.</p>
+	
+	{% for platform in platform_list %}
+		<a href="{% url 'new_runner_form' platform.pk %}" class="btn btn-outline-primary btn-lg" role="button">{{platform}}</a>
+	{% endfor %}
+
+{% endblock %}
