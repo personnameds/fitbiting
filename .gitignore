@@ -8,3 +8,6 @@ settings_local.py
 localfitbitdb.sqlite3
 API_KEY
 localrunnerdb.sqlite3
+*.sqlite3
+.DS_Store
+templates/.DS_Store

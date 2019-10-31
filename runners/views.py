@@ -1,7 +1,7 @@
 from django.views.generic.list import ListView
 from django.views.generic.edit import FormView
 from django.contrib.auth.models import User
-from django.contrib.auth import login
+from django.contrib.auth import login, authenticate
 from .forms import NewRunnerForm
 from .models import Runner
 from oauth2.models import Platform
@@ -19,12 +19,14 @@ class NewRunnerFormView(FormView):
 		first_name=form.cleaned_data['first_name']
 		username=first_name=form.cleaned_data['username']
 		
-		user=User.objects.create_user(username,None,None)
-		user.first_name=first_name
+		user=User.objects.create_user(username=username,
+									  first_name=first_name,
+									  )
+		user.set_unusable_password()
 		user.save()
-		
+	
 		login(self.request, user)
-		
+
 		platform=Platform.objects.get(id=self.kwargs['platform_id'])
 		
 		runner=Runner(user=user,platform=platform)
