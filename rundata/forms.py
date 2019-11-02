@@ -11,10 +11,10 @@ class RunDataForm(forms.Form):
 			error_messages={'required': 'Please choose at least one person'},
 			)
 	num_days=forms.IntegerField(min_value=1, 
-								max_value=10,
+								max_value=14,
 								initial=5, 
 								widget=forms.NumberInput(attrs={'style':'max-width: 21em'}),
-								label='How many days of data to graph? (1-10 days)',
+								label='How many days of data to graph? (1-14 days)',
 								)
 	
 	def __init__(self, *args, **kwargs):

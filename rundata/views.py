@@ -86,27 +86,24 @@ class RunDataDisplayView(TemplateView):
 		today = date.today()
 ##If Fitbiter has less than num of days selected will cut of newest dates
 ##This date thing doesn't work when Strava and Fitbit mixed, it cuts off dates??
-		ago = today - timedelta(days=(num_days-1))
+		update_date = today - timedelta(days=(num_days))
 			
 		for runner in runners:
-			UpdateRunData(runner, ago)
+			UpdateRunData(runner, update_date)
 		
-		rundata=RunData.objects.filter(runner__in=runners, date__gte=ago).order_by('date')
+		rundata=RunData .objects.filter(runner__in=runners, date__gte=update_date).order_by('date')
 		
 		rundata_list=[]
-		first=True
+		dates_list= [today - timedelta(days=x) for x in range(num_days,0,-1)]
+		rundata_list.append(dates_list)
 		for runner in runners:
-			if first:
-				rundata_list.append(rundata.filter(runner=runner).values_list('date', flat=True))
-				first=False
 			rundata_list.append(rundata.filter(runner=runner).values_list('distance', flat=True))
-		
 		zipped_rundata=list(zip(*rundata_list))
 		
 		data_table=[list(x) for x in zipped_rundata]
 
 		context['today']=today
-		context['ago']=ago
+		context['update_date']=update_date
 		context['runners']=runners
 		context['data_table']=data_table
 		return context

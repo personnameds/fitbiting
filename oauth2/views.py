@@ -2,10 +2,11 @@ from django.http import HttpResponseRedirect
 from django.shortcuts import redirect
 from .models import Platform
 from runners.models import Fitbiter, Runner, Stravaer
+from rundata.models import RunData
 from django.db import IntegrityError
 from django.urls import reverse
 import requests #need to install this library
-from datetime import datetime
+from datetime import date, timedelta
 import base64
 import urllib
 import json
@@ -202,7 +203,18 @@ def StravaCallBackView(request):
 					  refresh_token=str(ResponseJSON['refresh_token']),
 					  )
 	stravaer.save()
- 
+
+	# Initiate Strava data with goal and zero distance
+	dates = [date.today() - timedelta(days=x) for x in range(1,15)]
+	for d in dates:
+		rundata=RunData(runner=runner,
+						date=d,
+						distance=0,
+						goal=runner.goal,
+						goal_percent=0,
+						)
+		rundata.save()
+
 	#Displays the runners data	
 	return redirect(reverse('rundata-display', kwargs={'runner_ids':[runner.pk,],'num_days':5}))
 
