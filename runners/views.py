@@ -6,6 +6,7 @@ from .forms import NewRunnerForm
 from .models import Runner
 from oauth2.models import Platform
 from django.urls import reverse_lazy
+from datetime import date
 
 class PlatformListView(ListView):
 	model = Platform
@@ -30,7 +31,11 @@ class NewRunnerFormView(FormView):
 
 		platform=Platform.objects.get(id=self.kwargs['platform_id'])
 		
-		runner=Runner(user=user,platform=platform,goal=goal)
+		runner=Runner(user=user,
+					platform=platform,
+					goal=goal,
+					goal_set_date=date.today(),
+					)
 		runner.save()
 
 		return super(NewRunnerFormView, self).form_valid(form)

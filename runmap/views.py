@@ -13,7 +13,7 @@ from rundata.models import RunData
 
 from .forms import RunMapForm, CreateRouteForm_MapDetails
 
-from rundata.views import UpdateRunData
+from rundata.views import UpdateRunData, UpdateGoal
 from runners.models import Runner
 
 from django.conf import settings
@@ -109,6 +109,7 @@ class DisplayRouteTemplateView(TemplateView):
 			#Get and update each fitbiter involved in the route
 			runner=Runner.objects.get(rterunner=rterunner)
 			UpdateRunData(runner, start_date)
+			UpdateGoal(runner)
 			
 			rundata=rundata_all.filter(runner=runner, date__gte=start_date).order_by('-date')
 			for rd in rundata:

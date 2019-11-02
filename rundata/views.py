@@ -50,6 +50,21 @@ def UpdateRunData(runner, update_date):
 				rundata.save()
 		return
 
+def UpdateGoal(runner):
+	if date.today() - timedelta(days=14) >= runner.goal_set_date:		
+		reached_goal=RunData.objects.filter(
+					runner=runner, 
+					date__gte=runner.goal_set_date,
+					goal_percent__gte=1, 
+					).count()
+		if reached_goal >= 10:
+			runner.goal = runner.goal*Decimal(1.1)
+			runner.save()
+		elif reached_goal <=4:
+			runner.goal = runner.goal * Decimal(0.9)
+			runner.save()
+	return
+	
 ##Form that asks what data should be displayed
 class RunDataIndexView(FormView):
 	template_name='rundata/rundata_form.html'
@@ -90,8 +105,9 @@ class RunDataDisplayView(TemplateView):
 			
 		for runner in runners:
 			UpdateRunData(runner, update_date)
+			UpdateGoal(runner)
 		
-		rundata=RunData .objects.filter(runner__in=runners, date__gte=update_date).order_by('date')
+		rundata=RunData.objects.filter(runner__in=runners, date__gte=update_date).order_by('date')
 		
 		rundata_list=[]
 		dates_list= [today - timedelta(days=x) for x in range(num_days,0,-1)]
