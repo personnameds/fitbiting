@@ -13,7 +13,7 @@ from rundata.models import RunData
 
 from .forms import RunMapForm, CreateRouteForm_MapDetails
 
-from oauth2.views import UpdateRunData
+from rundata.views import UpdateRunData
 from runners.models import Runner
 
 from django.conf import settings

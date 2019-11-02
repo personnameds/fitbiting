@@ -26,7 +26,7 @@ class DistanceFilter(admin.SimpleListFilter):
 			return queryset.filter(distance__gte=20)
 		
 class RunDataAdmin(admin.ModelAdmin):
-	list_display=('runner','date','distance')
+	list_display=('runner','date','distance','goal','goal_percent')
 	date_hierarchy='date'
 	list_filter=('runner','date',DistanceFilter)
 	

@@ -4,13 +4,51 @@ from django.http import HttpResponseRedirect
 from django.views.generic import TemplateView
 from django.views.generic.edit import FormView
 
-from oauth2.views import UpdateRunData
+from oauth2.views import GetDataUsingAccessToken
 from runners.models import Runner
 from rundata.models import RunData
 from rundata.forms import RunDataForm
 
-import datetime
+from decimal import Decimal
 
+from datetime import datetime, date, timedelta
+
+def UpdateRunData(runner, update_date):
+	activity_data = GetDataUsingAccessToken(runner, update_date) 
+	
+	##Fitbit
+	if runner.platform.name == 'Fitbit':
+		distance_by_date=activity_data['activities-distance']
+		for i in distance_by_date:
+			rundata, created=RunData.objects.get_or_create(runner=runner,
+										  date=i['dateTime'],
+										  )
+			rundata.distance=Decimal(i['value'])
+			#Do not want to overwrite goal that was created at that time
+			#If created then add goal, otherwise keep the goal as is
+			if created:
+				rundata.goal=runner.goal
+			rundata.goal_percent=rundata.distance/rundata.goal
+			rundata.save()	
+		return
+
+	##Strava
+	elif runner.platform.name == 'Strava':
+		##Not tested
+		for activity in activity_data:
+			distance=Decimal(activity['distance']/1000)
+			activity_date=datetime.strptime(activity['start_date_local'],"%Y-%m-%dT%H:%M:%SZ")
+			if activity_date.date() >= update_date:
+				rundata, created = RunData.objects.get_or_create(runner=runner,
+															  date=activity_date.date(),
+															  )
+				rundata.distance=distance
+				if created:
+					rundata.goal=runner.goal
+				a=rundata.goal
+				rundata.goal_percent=rundata.distance/rundata.goal
+				rundata.save()
+		return
 
 ##Form that asks what data should be displayed
 class RunDataIndexView(FormView):
@@ -45,10 +83,10 @@ class RunDataDisplayView(TemplateView):
 		##for fitbiter_id in fitbiter_ids:
 		runners=Runner.objects.filter(pk__in=runner_ids)
 
-		today = datetime.date.today()
+		today = date.today()
 ##If Fitbiter has less than num of days selected will cut of newest dates
 ##This date thing doesn't work when Strava and Fitbit mixed, it cuts off dates??
-		ago = today - datetime.timedelta(days=(num_days-1))
+		ago = today - timedelta(days=(num_days-1))
 			
 		for runner in runners:
 			UpdateRunData(runner, ago)

@@ -4,11 +4,12 @@ from crispy_forms.helper import FormHelper
 from crispy_forms.layout import Submit
 
 class RunDataForm(forms.Form):
-	runners=forms.ModelMultipleChoiceField(queryset=Runner.objects.all(),
-											 widget=forms.CheckboxSelectMultiple,
-											 required=True,
-											 error_messages={'required': 'Please choose at least one person'},
-											 )
+	runners=forms.ModelMultipleChoiceField(
+			queryset=Runner.objects.all(),
+			widget=forms.CheckboxSelectMultiple,
+			required=True,
+			error_messages={'required': 'Please choose at least one person'},
+			)
 	num_days=forms.IntegerField(min_value=1, 
 								max_value=10,
 								initial=5, 

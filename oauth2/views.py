@@ -2,11 +2,8 @@ from django.http import HttpResponseRedirect
 from django.shortcuts import redirect
 from .models import Platform
 from runners.models import Fitbiter, Runner, Stravaer
-from rundata.models import RunData
-from django.conf import settings
 from django.db import IntegrityError
 from django.urls import reverse
-
 import requests #need to install this library
 from datetime import datetime
 import base64
@@ -14,23 +11,16 @@ import urllib
 import json
 
 import os
-
-def UpdateRunData(runner, update_date):
-	GetDataUsingAccessToken(runner, update_date) 
-	return
     
 def GetDataUsingAccessToken(runner, update_date):
-
-	#Erase the data from that date
-	#Then get new data from the date and beyond
-	RunData.objects.filter(runner=runner, date__gte=update_date).delete()
-	last_date=update_date.strftime("%Y-%m-%d")
+	
+	formatted_update_date=update_date.strftime("%Y-%m-%d")
 	
 	##Fitbit
 	if runner.platform.name == 'Fitbit':
 		fitbiter=Fitbiter.objects.get(runner=runner)
 	
-		FitbitURL='https://api.fitbit.com/1/user/'+fitbiter.fitbit_id+'/activities/distance/date/'+last_date+'/today.json'
+		FitbitURL='https://api.fitbit.com/1/user/'+fitbiter.fitbit_id+'/activities/distance/date/'+formatted_update_date+'/today.json'
 		req=urllib.request.Request(FitbitURL)
 		req.add_header('Authorization', 'Bearer ' + fitbiter.access_token)
 	
@@ -38,14 +28,9 @@ def GetDataUsingAccessToken(runner, update_date):
 			response=urllib.request.urlopen(req)
 			FullResponse=response.read()
 			activity_data = json.loads(FullResponse)
-			distance_by_date=activity_data['activities-distance']
-			for i in distance_by_date:
-				rundata=RunData(runner=runner,
-					date=i['dateTime'],
-					distance=i['value'],
-					)
-				rundata.save()	
-			return
+			
+			return activity_data
+		
 		except urllib.request.URLError as e:
 			HTTPErrorMessage=str(e.read())
 			##If Access token Expired
@@ -69,16 +54,9 @@ def GetDataUsingAccessToken(runner, update_date):
 		try:
 			response=urllib.request.urlopen(req)
 			FullResponse=response.read()
-			ResponseJSON=json.loads(FullResponse)
-			for activity_data in ResponseJSON:
-				distance=activity_data['distance']/1000
-				date=datetime.strptime(activity_data['start_date_local'],"%Y-%m-%dT%H:%M:%SZ")
-				if date.date() >= update_date:
-					rundata=RunData(runner=runner,
-						date=date.date(),
-						distance=distance,
-						)
-					rundata.save()
+			activity_data=json.loads(FullResponse)
+			return activity_data
+			
 		except urllib.request.URLError as e:
 			HTTPErrorMessage=str(e.read())
 			##If Access token Expired
@@ -224,29 +202,6 @@ def StravaCallBackView(request):
 					  refresh_token=str(ResponseJSON['refresh_token']),
 					  )
 	stravaer.save()
-
-	##Get Initial FitbitData
-	StravaURL='https://www.strava.com/api/v3/athlete/activities'
-	req=urllib.request.Request(StravaURL)
-	req.add_header('Authorization', 'Bearer ' + stravaer.access_token)
-	
-	try:
-		response=urllib.request.urlopen(req)
-		FullResponse=response.read()
-	except urllib.request.URLError as e:
-		print(e.code)
-		print(e.read())
-		
-	ResponseJSON = json.loads(FullResponse)
-
-	for activity_data in ResponseJSON:
-		distance=activity_data['distance']/1000
-		date=datetime.strptime(activity_data['start_date_local'],"%Y-%m-%dT%H:%M:%SZ")
-		rundata=RunData(runner=runner,
-			date=date.date(),
-			distance=distance,
-			)
-		rundata.save()
  
 	#Displays the runners data	
 	return redirect(reverse('rundata-display', kwargs={'runner_ids':[runner.pk,],'num_days':5}))
@@ -304,25 +259,6 @@ def FitbitCallBackView(request):
 					  refresh_token=str(ResponseJSON['refresh_token']),
 					  )
 	fitbiter.save()
-	
-	##Get Initial FitbitData
-	FitbitURL='https://api.fitbit.com/1/user/'+fitbiter.fitbit_id+'/activities/distance/date/today/7d.json'
- 	
-	req=urllib.request.Request(FitbitURL)
-	req.add_header('Authorization', 'Bearer ' + fitbiter.access_token)
-	
-	response=urllib.request.urlopen(req)
-	FullResponse=response.read()
-	ResponseJSON = json.loads(FullResponse)
-	
-	activity_data=ResponseJSON
-	distance_by_date=activity_data['activities-distance']
-	for i in distance_by_date:
-		rundata=RunData(runner=runner,
-				date=i['dateTime'],
-				distance=i['value'],
-				)
-		rundata.save()
 
 	#Displays the runners data	
 	return redirect(reverse('rundata-display', kwargs={'runner_ids':[runner.pk,],'num_days':5}))

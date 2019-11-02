@@ -5,6 +5,7 @@ from oauth2.models import Platform
 
 class Runner(models.Model):
 	user=models.OneToOneField(User, on_delete=models.CASCADE)
+	goal=models.DecimalField(max_digits=6, decimal_places=2)
 	platform=models.ForeignKey(Platform, on_delete=models.PROTECT)
 	
 	def __str__(self):

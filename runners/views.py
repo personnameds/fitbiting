@@ -17,7 +17,8 @@ class NewRunnerFormView(FormView):
 	
 	def form_valid(self, form):
 		first_name=form.cleaned_data['first_name']
-		username=first_name=form.cleaned_data['username']
+		username=form.cleaned_data['username']
+		goal=form.cleaned_data['goal']
 		
 		user=User.objects.create_user(username=username,
 									  first_name=first_name,
@@ -29,7 +30,7 @@ class NewRunnerFormView(FormView):
 
 		platform=Platform.objects.get(id=self.kwargs['platform_id'])
 		
-		runner=Runner(user=user,platform=platform)
+		runner=Runner(user=user,platform=platform,goal=goal)
 		runner.save()
 
 		return super(NewRunnerFormView, self).form_valid(form)
