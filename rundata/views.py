@@ -51,12 +51,13 @@ def UpdateRunData(runner, update_date):
 		return
 
 def UpdateGoal(runner):
-	if date.today() - timedelta(days=14) >= runner.goal_set_date:		
+	if date.today() - timedelta(days=7) >= runner.goal_set_date:		
 		reached_goal=RunData.objects.filter(
 					runner=runner, 
-					date__gte=runner.goal_set_date,
+					date__range=(date.today()-timedelta(days=14),date.today()-timedelta(days=1)),
 					goal_percent__gte=1, 
 					).count()
+		runner.goal_set_date=date.today()
 		if reached_goal >= 10:
 			runner.goal = runner.goal*Decimal(1.1)
 			runner.save()

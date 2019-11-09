@@ -7,22 +7,20 @@
 		width: 100%;
 	}
 	
-	#SideBarChart {
-		width: 100%;
-	}
-
-	#PieChart {
-		width: 100%;
-	}
-	
 	html, body {
 		height: 100%;
 	}
+
+	.tab-pane:not(.active) {
+		display:block;
+		height:0;
+		overflow-y:hidden;
+		}
 		
 </style>
 
 <!-- Google Charts -->
-<!-- Side Bar Chart -->
+<!-- Stacked Bar Chart -->
 <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
 <script type="text/javascript">
 	google.charts.load('current', {packages: ['corechart']});
@@ -56,13 +54,28 @@
  			['Distance Left',total_distance],
  		]);
 
+    	var bar_team_work_data = google.visualization.arrayToDataTable([
+ 			["Runner", "# Goals", { role: "style" } ],
+ 			{% for p in pie_team_work_data_table %}
+ 				['{{p.0.runner.user.username}}',{{p.1}},'{{p.0.colour}}'],
+ 			{% endfor %}
+ 		]);
+
+ 		var pie_team_work_data_table = google.visualization.arrayToDataTable([
+ 			['Runners','# Goals Acheived'],
+ 			{% for p in pie_team_work_data_table %}
+ 				['{{p.0.runner.user.username}}',{{p.1}}],
+ 			{% endfor %}
+ 		]);
+
 		var stacked_options = {
+			title: 'Percentage of Distance Covered Each Day',
 			isStacked: 'percent',
-			height: 300,
-			legend: {position: 'top', maxLines: 3},
+      		height: 300,
+			legend: {position: 'top'},
 			hAxis: {
-			minValue: 0,
-			ticks: [0, .25, .5, .75, 1]
+				minValue: 0,
+				ticks: [0, .25, .5, .75, 1]
 			},
 			series:{
 				{% for r in rterunners %}
@@ -70,8 +83,18 @@
 				{% endfor %}
 				},
 		};
-		
+	    
+	    var bar_options = {
+			title: "Total Number of Goals Acheived",
+			bar: {groupWidth: "95%"},
+			legend: {position: 'none'},
+			hAxis: {
+				minValue: 0,
+			},
+		};
+	
 		var pie_options = {
+			title: "Percentage of Total Distance",
 			colors:
 				[
 				{% for r in rterunners %}
@@ -81,12 +104,26 @@
 				],
 		};
 
+		var pie2_options = {
+			title: "Percentage of Total Goals Acheived",
+			colors:
+				[
+				{% for r in rterunners %}
+					'{{r.colour}}',
+				{% endfor %}
+				],
+		};
+
+
 	  // Instantiate and draw the chart.
-	  var stacked_chart = new google.visualization.BarChart(document.getElementById('SideBarChart'));
+	  var stacked_chart = new google.visualization.BarChart(document.getElementById('StackedBarChart'));
 	  stacked_chart.draw(stacked_data, stacked_options);
 	  var pie_chart = new google.visualization.PieChart(document.getElementById('PieChart'));
 	  pie_chart.draw(pie_data, pie_options);
-
+	  var pie_chart2 = new google.visualization.PieChart(document.getElementById('PieChart2'));
+	  pie_chart2.draw(pie_team_work_data_table, pie2_options);
+	  var bar_chart = new google.visualization.BarChart(document.getElementById('BarChart'));
+	  bar_chart.draw(bar_team_work_data, bar_options);
 	}
 </script>
 <!-- Map Display-->
@@ -223,7 +260,7 @@ console.log('Here:'+'{{rterunner}}')
 							});
 						polyline_runPath.setMap(map);
 
-						if ('{{rundate}}' == '{{today}}') {
+						if ('{{rundate}}' == '{{week_ago}}') {
 							if (!first_boundary) {
 								var first_boundary=runPath[0];
 							}
@@ -335,15 +372,31 @@ console.log('metres:'+metres+' PathLength:'+this.getPath().getLength());
 {% block main_content%}
 	<h2>{{route.title}}</h2>
 	<div class="row no-gutters">
-		<div class="col-md-8">
+		<div class="col-md-7"> <!-- Main/Map Div -->
 			<div id="map"></div>	
-		</div>
-		<div class="col-md-4">
-			<div id="SideBarChart"></div>
-			<div id="PieChart"></div>
-		</div>
+		</div> <!-- End Map/Map Div -->
+		<div class="col-md-5"> <!-- Column/Graph Div -->
+			<nav>
+				<div class="nav nav-tabs nav-fill" id="nav-tab" role="tablist">
+					<a class="nav-item nav-link active" id="nav-home-tab" data-toggle="tab" href="#nav-home" role="tab" aria-controls="nav-home" aria-selected="true">Distance</a>
+					<a class="nav-item nav-link" id="nav-profile-tab" data-toggle="tab" href="#nav-profile" role="tab" aria-controls="nav-profile" aria-selected="false">Goals</a>
+				</div>
+			</nav>
+			<div class="tab-content" id="nav-tabContent">
+				<div class="tab-pane fade show active" id="nav-home" role="tabpanel" aria-labelledby="nav-home-tab">
+					<div id="StackedBarChart"></div>
+					<div id="PieChart"></div>
+				</div>
+				<div class="tab-pane fade" id="nav-profile" role="tabpanel" aria-labelledby="nav-profile-tab">
+			  		<div id="BarChart"></div>
+					<div id="PieChart2"></div>
+				</div>
+			</div>
+		</div> <!-- End Column/Graph Div -->
 	</div> <!-- End of Row -->
-				
+
+
+
 		<!-- Modal -->
 		<div class="modal fade" id="finishedModal" tabindex="-1" role="dialog" aria-labelledby="finishedModalLabel" aria-hidden="true">
 		  <div class="modal-dialog" role="document">

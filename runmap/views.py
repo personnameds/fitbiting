@@ -22,6 +22,15 @@ from django.core.exceptions import ObjectDoesNotExist
 
 from django.db.models import Sum
 
+def Team_Work(rterunners, rundata_all):
+	team_work=[]
+	for rterunner in rterunners:
+		num_goal_completed=rundata_all.filter(runner=rterunner.runner,goal_percent__gte=1).count()
+		team_work.append([rterunner, num_goal_completed])
+	
+	return team_work
+
+
 ##Update a map or create a new map
 class RunMapIndex(FormView):
 	template_name='runmap/runmap_form.html'
@@ -118,6 +127,9 @@ class DisplayRouteTemplateView(TemplateView):
 		#Orders the list by fitrunner by date
 		rundata_list.sort(key=lambda x:x[0])
 
+		#Get Team Work Scores
+		pie_team_work_data_table=Team_Work(rterunners, rundata_all)
+
 		##Data for Charts
 		week_ago=date.today()-timedelta(days=7)
 		#Data for Stacked Bar Chart
@@ -134,8 +146,9 @@ class DisplayRouteTemplateView(TemplateView):
 			dist=rundata_all.filter(runner=rterunner.runner).aggregate(Sum('distance'))
 			dist=dist['distance__sum']
 			pie_data_table.append([rterunner.runner.user.username,dist])
-		
-		context['today']=date.today()
+
+		context['pie_team_work_data_table']=pie_team_work_data_table
+		context['week_ago']=week_ago
 		context['rterunners']=list(rterunners)
 		context['data_table']=data_table
 		context['pie_data_table']=pie_data_table
@@ -145,7 +158,7 @@ class DisplayRouteTemplateView(TemplateView):
 		return context
 
 
-##THIS DOESN'T WORK ANYMORE
+##BELOW DOESN'T WORK ANYMORE
 class DisplayFinishedRouteTemplateView(TemplateView):
 	template_name="runmap/finishedrunmap.html"
 	

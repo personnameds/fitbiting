@@ -11,7 +11,12 @@ from datetime import date
 class PlatformListView(ListView):
 	model = Platform
 	template_name='runners/platform_index.html'
-	
+
+class RunnerListView(ListView):
+	model = Runner
+	template_name='runners/runner_index.html'	
+
+
 class NewRunnerFormView(FormView):
 	template_name='runners/newrunner_form.html'
 	form_class=NewRunnerForm
