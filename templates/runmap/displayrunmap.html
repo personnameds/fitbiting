@@ -159,13 +159,16 @@
 				var last_i=0;
 				var runPath=[];
 				var stopPath_dist;
-
+				var endRoute = false;
+				
+console.log(route.steps.length);
 				{% for rundate, rterunner, rundata in rundata_list %}
 					//Each fitbiter, each date how far they ran
 					var dist_ran={{rundata.distance}}*1000;
-console.log('{{runner}}');
+console.log('Starting with {{rterunner}}');
+console.log('Top endRoute:'+endRoute)
 					//Check if they have run today
-					if (dist_ran > 0) {
+					if (dist_ran > 0 && endRoute == false) {
 						//IF stop PathTo has value
 						if (stopPath_dist) {
 							//Get points for stop spot up to next step
@@ -194,6 +197,11 @@ console.log('Dist_Ran:'+dist_ran+' stopPath:'+stopPath_dist+' along_stopPath:'+a
 							sum_dist_steps += route.steps[i].distance.value;
 console.log('i:'+i+' sum_dist:'+sum_dist_steps+' dist_ran:'+dist_ran);
 							i++;
+							if (i == route.steps.length) {
+								endRoute=true;			
+console.log('Route is Finished')
+								break;
+								}
 						} // while dist_steps
 					
 						//Create Array of LatLngs from Steps with less distance than distance ran
@@ -201,57 +209,74 @@ console.log('i:'+i+' sum_dist:'+sum_dist_steps+' dist_ran:'+dist_ran);
 						//then + 1 because loop j starts at 0 or last_i which is equivalent to zero
 						//Loop through steps
 console.log('Out - i:'+i+' sum_dist:'+sum_dist_steps+' dist_ran:'+dist_ran+' stepLength:'+route.steps[i-1].distance.value);					
-						for (j=last_i; j < i - 1; j++) {
+						if (endRoute==false) {
+							for (j=last_i; j < i - 1; j++) {
 console.log('j:'+j);
-							stepPath=route.steps[j].path
-							//Loop through points
-							for (k=0; k < stepPath.length; k++) {
-								runPath.push(stepPath[k]);
+								stepPath=route.steps[j].path
+								//Loop through points
+								for (k=0; k < stepPath.length; k++) {
+									runPath.push(stepPath[k]);
+								}
+							}
+						} else { //endroute=True
+							//End of the route so go right to the end
+							for (j=last_i; j < i; j++) {
+console.log('End Route j:'+j);
+								stepPath=route.steps[j].path
+								//Loop through points
+								for (k=0; k < stepPath.length; k++) {
+									runPath.push(stepPath[k]);
+								}
 							}
 						} 
+console.log(endRoute);
 console.log(along_stopPathFrom);
-						if (along_stopPathFrom==false) { 
-							//Regular stopPoint finding
-							//Find the exact stop point and the path up to that point
-							var stepPoly = new google.maps.Polyline({
-								path: route.steps[i-1].path,
-							});
+						if (endRoute == false) {
+							if (along_stopPathFrom==false) { 
+								//Regular stopPoint finding
+								//Find the exact stop point and the path up to that point
+								var stepPoly = new google.maps.Polyline({
+									path: route.steps[i-1].path,
+								});
 				
-							var distanceThisStep = route.steps[i-1].distance.value;
-							var stopPath = stepPoly.GetPointAtDistance(distanceThisStep - (sum_dist_steps - dist_ran));
-console.log('stopPath - i:'+i+' distanceThisStep:'+distanceThisStep);
-							if (stopPath == null) {
-								console.log("stepPoly.GetPointAtDistance(" + distanceThisStep + ") returns null");
-								return;
-							} //if stopPath == Null
-							//Get points for last step up to stop point
-							for (j=0; j < stopPath.pathTo.length; j++) {
-								runPath.push(stopPath.pathTo[j]);
-							} //stopPath loop	
+								var distanceThisStep = route.steps[i-1].distance.value;
+								var stopPath = stepPoly.GetPointAtDistance(distanceThisStep - (sum_dist_steps - dist_ran));
+	console.log('stopPath - i:'+i+' distanceThisStep:'+distanceThisStep);
+								if (stopPath == null) {
+									console.log("stepPoly.GetPointAtDistance(" + distanceThisStep + ") returns null");
+									return;
+								} //if stopPath == Null
+								//Get points for last step up to stop point
+								for (j=0; j < stopPath.pathTo.length; j++) {
+									runPath.push(stopPath.pathTo[j]);
+								} //stopPath loop	
 						
-							stopPath_dist = sum_dist_steps - dist_ran;			
+								stopPath_dist = sum_dist_steps - dist_ran;			
 					
-						} else {
-							//Short route finding Stop point on the PathFrom
-							var stepPoly = new google.maps.Polyline({
-								path: stopPath.pathFrom,
-							});
-console.log('stepPoly - dist_ran:'+dist_ran);
-							var stopPath = stepPoly.GetPointAtDistance(dist_ran);
-							if (stopPath == null) {
-								console.log("stepPoly.GetPointAtDistance(" + dist_ran + ") returns null");
-								return;
-							} //if stopPath == Null	
+							} else { //along_stopPathFrom==false
+								//Short route finding Stop point on the PathFrom
+								var stepPoly = new google.maps.Polyline({
+									path: stopPath.pathFrom,
+								});
+	console.log('stepPoly - dist_ran:'+dist_ran);
+								var stopPath = stepPoly.GetPointAtDistance(dist_ran);
+								if (stopPath == null) {
+									console.log("stepPoly.GetPointAtDistance(" + dist_ran + ") returns null");
+									return;
+								} //if stopPath == Null	
 
-							for (j=0; j < stopPath.pathTo.length; j++) {
-								runPath.push(stopPath.pathTo[j]);
-							} //stopPath loop	
+								for (j=0; j < stopPath.pathTo.length; j++) {
+									runPath.push(stopPath.pathTo[j]);
+								} //stopPath loop	
 						
-							stopPath_dist = sum_dist_steps - dist_ran;
-						} //if along_stopPathTo
-console.log('End '+stopPath_dist);				
+								stopPath_dist = sum_dist_steps - dist_ran;
+							} //if along_stopPathTo
+							
 						//Add the stop point
-						runPath.push(stopPath.point);
+						runPath.push(stopPath.point);						
+						} //if endRoute
+console.log('End '+stopPath_dist);				
+
 console.log('Here:'+'{{rterunner}}')
 						var polyline_runPath = new google.maps.Polyline({
 							path: runPath,
@@ -269,13 +294,11 @@ console.log('Here:'+'{{rterunner}}')
 						//Prepare for next fitrunner
 						last_i=i;
 						runPath.length=0;
-
-					} //if dist_ran > 0;
-					
+					} //if dist_ran > 0 or endRoute = true;
 					
 				{% endfor %} //for fitdata_list
-				
-				if(first_boundary == null) {
+
+				if(first_boundary == null || endRoute == true) {
 					first_boundary=route.steps[0].path[0];
 				} //If all runners distance = 0
 				var last_boundary=stopPath.point; //May break if initial setup all runners are zero
@@ -284,8 +307,11 @@ console.log('Here:'+'{{rterunner}}')
 				bounds.extend(last_boundary);
 				map.fitBounds(bounds);
 
+				if (endRoute == true) {
+					$("#finishedModal").modal()
+				}
 			} //if status
-		}); //directionsService
+		}); //directionsService	
 	} //displayRoute() function
 	
 	
@@ -365,8 +391,8 @@ console.log('metres:'+metres+' PathLength:'+this.getPath().getLength());
 		 pathFrom: pathFrom
 	   };
 	 } // End of GetPointAtDistance
- } //End of EPoly
-			
+} //End of EPoly
+
 </script>
 {% endblock %}
 {% block main_content%}
@@ -409,11 +435,10 @@ console.log('metres:'+metres+' PathLength:'+this.getPath().getLength());
 			  </div>
 			  <div class="modal-body">
 				<p>Congrtulations, you finished the route!</p>
-				<p>You can either close and save the information, so you can take a look at it later or you can simply delete it.<p>
+				<p>This route will no longer be updated but it will be saved so you can look back and see how you did.<p>
 			  </div>
 			  <div class="modal-footer">
 				<a href="{% url 'finishedroute' finished='save' route=route.pk %}" class="btn btn-primary" role="button">Close and Save</a>
-				<a href="{% url 'finishedroute' finished='delete' route=route.pk %}" class="btn btn-danger" role="button">Delete</a>
 			  </div>
 			</div>
 		  </div>
