@@ -37,7 +37,7 @@
 				[
 				{% for d in data_date %}
 					{% if forloop.first %}
-						'{{d}}',
+						'{{d|date:"D M j"}}',
 					{% else %}
 						{{d}},
 					{% endif %}
@@ -438,7 +438,7 @@ console.log('metres:'+metres+' PathLength:'+this.getPath().getLength());
 				<p>This route will no longer be updated but it will be saved so you can look back and see how you did.<p>
 			  </div>
 			  <div class="modal-footer">
-				<a href="{% url 'finishedroute' finished='save' route=route.pk %}" class="btn btn-primary" role="button">Close and Save</a>
+				<a href="{% url 'finishedroute' route=route.pk %}" class="btn btn-primary" role="button">Close and Save</a>
 			  </div>
 			</div>
 		  </div>

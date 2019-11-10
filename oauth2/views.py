@@ -28,12 +28,9 @@ def GetDataUsingAccessToken(runner, update_date):
 		try:
 			response=urllib.request.urlopen(req)
 			FullResponse=response.read()
-			activity_data = json.loads(FullResponse)
-			
+			activity_data = json.loads(FullResponse)	
 			return activity_data
-		
 		except urllib.request.URLError as e:
-			HTTPErrorMessage=str(e.read())
 			##If Access token Expired
 			if (e.code==401) and (HTTPErrorMessage.find("Access token expired") > 0):
 				GetNewAccessandRefreshToken(runner, update_date)

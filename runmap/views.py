@@ -157,13 +157,69 @@ class DisplayRouteTemplateView(TemplateView):
 		context['API_KEY']=settings.API_KEY
 		return context
 
+#Saves the route as finished
+def FinishedRoute(request, route):
+	route=Route.objects.get(pk=route)
+	route.finished=True
+	route.end_date=date.today()
+	route.title=route.title+' (Completed)'
+	route.save()
+	return reverse('displayfinishedroute', kwargs={'route':route.pk})
 
-##BELOW DOESN'T WORK ANYMORE
 class DisplayFinishedRouteTemplateView(TemplateView):
 	template_name="runmap/finishedrunmap.html"
 	
-#Used for creating a route and displaying a route
-def FinishedRoute(request, finished, route):
-	pass
+	def get_context_data(self, **kwargs):
+		context = super().get_context_data(**kwargs)
+		
+		route=Route.objects.get(pk=kwargs['route'])
+		start_date=route.start_date
+		end_date=route.end_date
+		
+		rterunners=RteRunner.objects.filter(route=route)
 
-##ABOVE DOESN'T WORK ANYMORE
+		runners=Runner.objects.filter(pk__in=rterunners.values_list('runner'))
+		rundata_all=RunData.objects.filter(runner__in=runners, date__range=(start_date,end_date)).order_by('-date')
+
+		##Data for map
+		#Data from FitDate after or same date as last update
+		rundata_list=[]
+		for rterunner in rterunners:
+			rundata=rundata_all.filter(runner=rterunner.runner).order_by('-date')
+			for rd in rundata:
+				rundata_list.append((rd.date, rterunner, rd)) 
+
+		#Orders the list by fitrunner by date
+		rundata_list.sort(key=lambda x:x[0])
+
+		#Get Team Work Scores
+		pie_team_work_data_table=Team_Work(rterunners, rundata_all)
+
+		##Data for Charts
+		week_ago=end_date-timedelta(days=7)
+		#Data for Stacked Bar Chart
+		dates=rundata_all.filter(date__gte=week_ago).values_list('date', flat=True).order_by('-date').distinct() ##Need to include order_by for database????
+
+		data_table=[]
+		for d in dates:
+			dt=[d]
+			dt.extend(rundata_all.filter(date=d).values_list('distance', flat=True).order_by('runner'))
+			data_table.append(dt)
+		
+		pie_data_table=[]
+		for rterunner in rterunners:
+			dist=rundata_all.filter(runner=rterunner.runner).aggregate(Sum('distance'))
+			dist=dist['distance__sum']
+			pie_data_table.append([rterunner.runner.user.username,dist])
+
+		context['pie_team_work_data_table']=pie_team_work_data_table
+		context['week_ago']=week_ago
+		context['rterunners']=list(rterunners)
+		context['data_table']=data_table
+		context['pie_data_table']=pie_data_table
+		context['rundata_list']=rundata_list
+		context['route']=route
+		context['API_KEY']=settings.API_KEY
+		return context
+
+
