@@ -28,7 +28,10 @@ def UpdateRunData(runner, update_date):
 			#If created then add goal, otherwise keep the goal as is
 			if created:
 				rundata.goal=runner.goal
-			rundata.goal_percent=rundata.distance/rundata.goal
+			if rundata.goal > 0:
+				rundata.goal_percent=rundata.distance/rundata.goal
+			else:
+				rundata.goal_percent=0
 			rundata.save()	
 		return
 
