@@ -45,8 +45,10 @@ def UpdateRunData(runner, update_date):
 				rundata.distance=distance
 				if created:
 					rundata.goal=runner.goal
-				a=rundata.goal
-				rundata.goal_percent=rundata.distance/rundata.goal
+				if rundata.goal > 0:
+					rundata.goal_percent=rundata.distance/rundata.goal
+				else:
+					rundata.goal_percent=0
 				rundata.save()
 		return
 
