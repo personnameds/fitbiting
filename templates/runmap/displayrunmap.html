@@ -51,7 +51,6 @@
  			{% for p in pie_data_table %}
  				['{{p.0}}',{{p.1}}],
  			{% endfor %}
- 			['Distance Left',total_distance],
  		]);
 
     	var bar_team_work_data = google.visualization.arrayToDataTable([
@@ -94,13 +93,12 @@
 		};
 	
 		var pie_options = {
-			title: "Percentage of Total Distance",
+			title: "Percentage of Distance Covered To Date",
 			colors:
 				[
 				{% for r in rterunners %}
 					'{{r.colour}}',
 				{% endfor %}
-				'#808080',
 				],
 		};
 
@@ -128,8 +126,6 @@
 </script>
 <!-- Map Display-->
 <script>		
-	var total_distance;
-	
 	function initMap() {
 		installEpoly();
   		displayRoute();
@@ -153,7 +149,6 @@
 		directionsService.route(request, function(response, status) {
 			if (status == 'OK') {
 				var route=response.routes[0].legs[0]
-				total_distance=route.distance.value/1000;
 				
 				var i=0
 				var last_i=0;
@@ -397,6 +392,7 @@ console.log('metres:'+metres+' PathLength:'+this.getPath().getLength());
 {% endblock %}
 {% block main_content%}
 	<h2>{{route.title}}</h2>
+	<h6>{{route.start_date}} - {{today}}</h6>
 	<div class="row no-gutters">
 		<div class="col-md-7"> <!-- Main/Map Div -->
 			<div id="map"></div>	

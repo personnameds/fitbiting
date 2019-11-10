@@ -60,7 +60,9 @@ class CreateRouteFormView(FormView):
 		return context
 	
 	def form_valid(self, form):
-		strokecolor=["#0082c8","#3cb44b","#911eb4","#000080","#46f0f0#","#f58231","#f032e6","#e6beff"]
+		strokecolor=["#0082c8","#3cb44b","#911eb4","#000080","#46f0f0","#800080","#f58231","#f032e6",
+					 "#e6beff","#00ffff","#FF00FF","#808080","#008000","#00ff00","#800000","#ff0000",
+					 "#c0c0c0","#008080","#FFFF00","#000000"]
 		
 		title=form.cleaned_data['title']
 
@@ -149,6 +151,7 @@ class DisplayRouteTemplateView(TemplateView):
 
 		context['pie_team_work_data_table']=pie_team_work_data_table
 		context['week_ago']=week_ago
+		context['today']=date.today()
 		context['rterunners']=list(rterunners)
 		context['data_table']=data_table
 		context['pie_data_table']=pie_data_table
@@ -196,7 +199,7 @@ class DisplayFinishedRouteTemplateView(TemplateView):
 		pie_team_work_data_table=Team_Work(rterunners, rundata_all)
 
 		##Data for Charts
-		week_ago=end_date-timedelta(days=7)
+		week_ago=end_date-timedelta(days=7) #Week ago is for week before end date
 		#Data for Stacked Bar Chart
 		dates=rundata_all.filter(date__gte=week_ago).values_list('date', flat=True).order_by('-date').distinct() ##Need to include order_by for database????
 
@@ -213,7 +216,7 @@ class DisplayFinishedRouteTemplateView(TemplateView):
 			pie_data_table.append([rterunner.runner.user.username,dist])
 
 		context['pie_team_work_data_table']=pie_team_work_data_table
-		context['week_ago']=week_ago
+		context['week_ago']=week_ago ##Week ago is for week before end date
 		context['rterunners']=list(rterunners)
 		context['data_table']=data_table
 		context['pie_data_table']=pie_data_table

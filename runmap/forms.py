@@ -6,7 +6,7 @@ from crispy_forms.layout import Submit
 from crispy_forms.layout import Button
 
 class RunMapForm(forms.Form):
-	routes=forms.ModelChoiceField(queryset=Route.objects.all(),required=False, empty_label=None)
+	routes=forms.ModelChoiceField(queryset=Route.objects.order_by('start_date').order_by('finished'),required=False, empty_label=None)
 	
 	def __init__(self, *args, **kwargs):
 		super().__init__(*args, **kwargs)
