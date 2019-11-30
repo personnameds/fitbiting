@@ -31,6 +31,7 @@ def GetDataUsingAccessToken(runner, update_date):
 			activity_data = json.loads(FullResponse)	
 			return activity_data
 		except urllib.request.URLError as e:
+			HTTPErrorMessage=str(e.read())
 			##If Access token Expired
 			if (e.code==401) and (HTTPErrorMessage.find("Access token expired") > 0):
 				GetNewAccessandRefreshToken(runner, update_date)
@@ -78,7 +79,7 @@ def GetNewAccessandRefreshToken(runner, update_date):
 		##Use Refresh token to get new  access token
 		BodyText={'refresh_token': fitbiter.refresh_token,
 				  'grant_type':'refresh_token',
-				  'expires_in':2592000,
+				  'expires_in':604800,
 				  }
 		BodyURLEncoded=urllib.parse.urlencode(BodyText).encode('utf-8')
 	
@@ -98,9 +99,19 @@ def GetNewAccessandRefreshToken(runner, update_date):
 			response=urllib.request.urlopen(req)
 			FullResponse=response.read()
 		except urllib.request.URLError as e:
-			print(e.code)
-			print(e.read())
-
+			HTTPErrorMessage=str(e.read())
+			##If Refresh Token is Invalid
+			if (e.code==401) and (HTTPErrorMessage.find("Refresh token expired") > 0):
+				redirect_uri=platform.redirect_uri
+				redirect_uri=urllib.parse.quote(redirect_uri, safe='')
+				authorize_url='https://www.fitbit.com/oauth2/authorize?response_type=code&client_id='+client_id+'&redirect_uri='+redirect_uri+'&scope=activity&expires_in=86400'
+				return HttpResponseRedirect(authorize_url)
+			## Some other error
+			else:
+				print(e.code)
+				print(e.read())
+				return False
+				
 		## Access and Refresh Token Received
 		## Saving tokens to model
 		ResponseJSON = json.loads(FullResponse)
@@ -232,7 +243,7 @@ def FitbitCallBackView(request):
 			  'redirect_uri':redirect_uri,
 			  'client_id': client_id,
 			  'grant_type':'authorization_code',
-			  'expires_in':2592000,
+			  'expires_in':604800,
 			  }
 	BodyURLEncoded=urllib.parse.urlencode(BodyText).encode('utf-8')
 	
@@ -259,15 +270,19 @@ def FitbitCallBackView(request):
 	## Access and Refresh Token Received
 	## Saving tokens to model
 	ResponseJSON = json.loads(FullResponse)
-
+	
 	runner=Runner.objects.get(user=request.user)
-
-	fitbiter=Fitbiter(runner=runner,
-				      fitbit_id=str(ResponseJSON['user_id']),
-					  access_token=str(ResponseJSON['access_token']),
-					  refresh_token=str(ResponseJSON['refresh_token']),
-					  )
-	fitbiter.save()
-
+	
+	try:
+		Fitbiter.objects.get(runner=runner)
+		return True
+	except Fitbiter.DoesNotExist:
+		fitbiter=Fitbiter(runner=runner,
+    					  fitbit_id=str(ResponseJSON['user_id']),
+						  access_token=str(ResponseJSON['access_token']),
+						  refresh_token=str(ResponseJSON['refresh_token']),
+						  )
+		fitbiter.save()
+	
 	#Displays the runners data	
 	return redirect(reverse('rundata-display', kwargs={'runner_ids':[runner.pk,],'num_days':5}))
