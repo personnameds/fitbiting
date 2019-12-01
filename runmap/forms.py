@@ -19,16 +19,18 @@ class CreateRouteForm_MapDetails(forms.Form):
 	title=forms.CharField(max_length=50, widget=forms.TextInput(attrs={'id':"title",'size':'30%'}))
 	start=forms.CharField(max_length=250, widget=forms.TextInput(attrs={'id':"start",'size':'30%'}))
 	end=forms.CharField(max_length=250, widget=forms.TextInput(attrs={'id':"end",'size':'30%'}))
+	td_display=forms.CharField(max_length=10, required=False, label='Total Distance (KM)', disabled=True, widget=forms.TextInput(attrs={'id':"td_display",'size':'10%'}))									
 	runners=forms.ModelMultipleChoiceField(queryset=Runner.objects.all(), 
 											 widget=forms.CheckboxSelectMultiple,
 											 error_messages={'required': 'Please choose at least one person'},
-											 )
+											 ) 
 	status=forms.CharField(max_length=5, initial=False, widget=forms.HiddenInput(attrs={'id':"status"}))
 	start_lat=forms.DecimalField(max_digits=10, decimal_places=6, required=False, widget=forms.HiddenInput(attrs={'id':"start_lat"}))
 	start_long=forms.DecimalField(max_digits=10, decimal_places=6, required=False, widget=forms.HiddenInput(attrs={'id':"start_long"}))
 	end_lat=forms.DecimalField(max_digits=10, decimal_places=6, required=False, widget=forms.HiddenInput(attrs={'id':"end_lat"}))
 	end_long=forms.DecimalField(max_digits=10, decimal_places=6, required=False, widget=forms.HiddenInput(attrs={'id':"end_long"}))
-
+	total_distance=forms.DecimalField(max_digits=7, decimal_places=1, required=False, widget=forms.HiddenInput(attrs={'id':"total_distance"}))
+	
 	def clean_status(self):
 			status = self.cleaned_data['status']
 			if status == 'False':

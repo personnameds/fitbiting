@@ -32,6 +32,7 @@ def GetDataUsingAccessToken(runner, update_date):
 			return activity_data
 		except urllib.request.URLError as e:
 			##If Access token Expired
+			HTTPErrorMessage=str(e.read())
 			if (e.code==401) and (HTTPErrorMessage.find("Access token expired") > 0):
 				GetNewAccessandRefreshToken(runner, update_date)
 			## Some other error
@@ -78,7 +79,7 @@ def GetNewAccessandRefreshToken(runner, update_date):
 		##Use Refresh token to get new  access token
 		BodyText={'refresh_token': fitbiter.refresh_token,
 				  'grant_type':'refresh_token',
-				  'expires_in':2592000,
+				  'expires_in':604800,
 				  }
 		BodyURLEncoded=urllib.parse.urlencode(BodyText).encode('utf-8')
 	
@@ -232,7 +233,7 @@ def FitbitCallBackView(request):
 			  'redirect_uri':redirect_uri,
 			  'client_id': client_id,
 			  'grant_type':'authorization_code',
-			  'expires_in':2592000,
+			  'expires_in':604800,
 			  }
 	BodyURLEncoded=urllib.parse.urlencode(BodyText).encode('utf-8')
 	

@@ -55,7 +55,6 @@ class CreateRouteFormView(FormView):
 	
 	def get_context_data(self, **kwargs):
 		context = super().get_context_data(**kwargs)
-
 		context['API_KEY']=settings.API_KEY
 		return context
 	
@@ -71,6 +70,8 @@ class CreateRouteFormView(FormView):
 		end_lat=form.cleaned_data['end_lat']
 		end_long=form.cleaned_data['end_long']
 		
+		total_distance=form.cleaned_data['total_distance']
+		
 		runners = form.cleaned_data['runners']
 
 		route=Route(title=title,
@@ -78,7 +79,8 @@ class CreateRouteFormView(FormView):
 			start_long=start_long,
 			end_lat=end_lat,
 			end_long=end_long,
-			start_date=date.today()
+			start_date=date.today(),
+			total_distance=total_distance,
 			)
 		route.save()
 		
@@ -167,7 +169,7 @@ def FinishedRoute(request, route):
 	route.end_date=date.today()
 	route.title=route.title+' (Completed)'
 	route.save()
-	return reverse('displayfinishedroute', kwargs={'route':route.pk})
+	return HttpResponseRedirect(reverse('displayfinishedroute', kwargs={'route':route.pk}))
 
 class DisplayFinishedRouteTemplateView(TemplateView):
 	template_name="runmap/finishedrunmap.html"

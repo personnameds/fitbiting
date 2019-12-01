@@ -51,6 +51,7 @@
  			{% for p in pie_data_table %}
  				['{{p.0}}',{{p.1}}],
  			{% endfor %}
+ 			['Distance Left',{{route.total_distance}}]
  		]);
 
     	var bar_team_work_data = google.visualization.arrayToDataTable([
@@ -99,6 +100,7 @@
 				{% for r in rterunners %}
 					'{{r.colour}}',
 				{% endfor %}
+				'#808080',
 				],
 		};
 
@@ -296,7 +298,11 @@ console.log('Here:'+'{{rterunner}}')
 				if(first_boundary == null || endRoute == true) {
 					first_boundary=route.steps[0].path[0];
 				} //If all runners distance = 0
-				var last_boundary=stopPath.point; //May break if initial setup all runners are zero
+				if (endRoute == true) {
+					var last_boundary=route.steps[route.steps.length-1].path[0]
+				} else {
+					var last_boundary=stopPath.point; //May break if initial setup all runners are zero
+				}
 				var bounds=new google.maps.LatLngBounds();
 				bounds.extend(first_boundary);
 				bounds.extend(last_boundary);

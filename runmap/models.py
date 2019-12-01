@@ -10,6 +10,7 @@ class Route(models.Model):
 	finished=models.BooleanField(default=False, blank=True)
 	start_date=models.DateField()
 	end_date=models.DateField(null=True, blank=True)
+	total_distance=models.DecimalField(max_digits=7, decimal_places=1)
 	
 	def __str__(self):
 		return '%s' %self.title
