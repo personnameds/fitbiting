@@ -33,11 +33,11 @@ def GetDataUsingAccessToken(runner, update_date):
 		except urllib.request.URLError as e:
 			HTTPErrorMessage=str(e.read())
 			##If Access token Expired
-			HTTPErrorMessage=str(e.read())
 			if (e.code==401) and (HTTPErrorMessage.find("Access token expired") > 0):
 				GetNewAccessandRefreshToken(runner, update_date)
 			## Some other error
 			else:
+				print('Error in Fitbit GetDataUsingAccessToken')
 				print(e.code)
 				print(e.read())
 				return False
@@ -64,6 +64,7 @@ def GetDataUsingAccessToken(runner, update_date):
 				GetNewAccessandRefreshToken(runner, update_date)
 			## Some other error
 			else:
+				print('Error in Strava GetDataUsingAccessToken')
 				print(HTTPErrorMessage)
 				return False
 
@@ -103,12 +104,10 @@ def GetNewAccessandRefreshToken(runner, update_date):
 			HTTPErrorMessage=str(e.read())
 			##If Refresh Token is Invalid
 			if (e.code==401) and (HTTPErrorMessage.find("Refresh token expired") > 0):
-				redirect_uri=platform.redirect_uri
-				redirect_uri=urllib.parse.quote(redirect_uri, safe='')
-				authorize_url='https://www.fitbit.com/oauth2/authorize?response_type=code&client_id='+client_id+'&redirect_uri='+redirect_uri+'&scope=activity&expires_in=86400'
-				return HttpResponseRedirect(authorize_url)
+				NewRunnerView(platform_id)
 			## Some other error
 			else:
+				print('Error in Fitbit GetNewAccessandRefreshToken')
 				print(e.code)
 				print(e.read())
 				return False
