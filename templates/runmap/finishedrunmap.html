@@ -269,9 +269,8 @@
 					} //if dist_ran > 0 or endRoute = true;
 					
 				{% endfor %} //for fitdata_list
-
 				first_boundary=route.steps[0].path[0];
-				var last_boundary=stopPath.point; //May break if initial setup all runners are zero
+				var last_boundary=route.steps[route.steps.length-1].path[0]
 				var bounds=new google.maps.LatLngBounds();
 				bounds.extend(first_boundary);
 				bounds.extend(last_boundary);

@@ -73,8 +73,9 @@
 			document.getElementById('start_long').value = response.routes[0].legs[0].start_location.lng().toFixed(6);
 			document.getElementById('end_lat').value = response.routes[0].legs[0].end_location.lat().toFixed(6);
 			document.getElementById('end_long').value = response.routes[0].legs[0].end_location.lng().toFixed(6);
-			console.log(document.getElementById('end_long').value);		
-		  
+			var total_distance=response.routes[0].legs[0].distance.value/1000;
+			document.getElementById('td_display').value = total_distance.toFixed(1);			
+			document.getElementById('total_distance').value = total_distance.toFixed(1);
 		  } else {
 			window.alert('Directions request failed due to ' + status);
 		  }

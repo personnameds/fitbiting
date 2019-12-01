@@ -33,6 +33,7 @@ def GetDataUsingAccessToken(runner, update_date):
 		except urllib.request.URLError as e:
 			HTTPErrorMessage=str(e.read())
 			##If Access token Expired
+			HTTPErrorMessage=str(e.read())
 			if (e.code==401) and (HTTPErrorMessage.find("Access token expired") > 0):
 				GetNewAccessandRefreshToken(runner, update_date)
 			## Some other error
