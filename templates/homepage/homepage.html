@@ -1,8 +1,84 @@
 {% extends "base.html" %}
 
+{% block head_content %}
+<!-- Load the AJAX API -->
+<script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+<script async type="text/javascript">
+	
+	// Load the Visualizations API and the corechart package
+	google.charts.load('current', {'packages':['corechart']});
+	
+	// Set a callback to run when the Google Visualization API is loaded
+	google.charts.setOnLoadCallback(drawLineGraph);
+	
+	// Creates the chart and passes the data
+	function drawLineGraph() {
+		
+		//Create the data table
+		 var data = google.visualization.arrayToDataTable([
+		 	['Date','Distance'],
+		 	{% for date, dist in distance_list %}
+		 		['{{date|date:"D M d"}}',{{dist}}],
+			{% endfor %}
+		  ]);
+		
+		var options = {
+			vAxis: { title: "Distance (KM)" },
+			legend: {position: 'none'}
+			};
+		
+		// Instantiate and draw the chart.
+		var chart = new google.visualization.LineChart(document.getElementById('chart_div'));
+
+		chart.draw(data, options);
+	}
+</script>
+{% endblock %}
+
+
+
 {% block main_content %}
 	<h1>Under Construction</h1>
-	<p>The other pages all work, this will eventually be a dashboard. First time
-	click Join In. Just want to look around click on Maps and choose a route. </p>
+
+	<div class="row align-items-center no-gutters">
+		<div class="col-sm-2">
+			<h3>Current Routes</h3>
+		</div>
+		<div class="col-sm">
+			{% for route in current_list %}
+				<figure class="figure">
+					<img src="https://maps.googleapis.com/maps/api/staticmap?size=200x200
+					&markers={{route.start_lat}},{{route.start_long}}|{{route.end_lat}},{{route.end_long}}
+					&key=AIzaSyD6_Ijs_bPcN8zNPjhx204CWxZvQfa_f_w" 
+					alt="{{route.title}}" class="rounded">
+					<figcaption class="figure-cpation">{{route.title}}</figcaption>
+				</figure>
+			{% endfor %}
+		</div>
+	</div>
+	<div class="row align-items-center no-gutters">
+		<div class="col-sm-2">
+			<h3>Completed Routes</h3>
+		</div>
+		<div class="col-sm">
+			{% for route in completed_list %}
+				<figure class="figure">
+					<img src="https://maps.googleapis.com/maps/api/staticmap?size=200x200
+					&markers={{route.start_lat}},{{route.start_long}}|{{route.end_lat}},{{route.end_long}}
+					&key=AIzaSyD6_Ijs_bPcN8zNPjhx204CWxZvQfa_f_w" 
+					alt="{{route.title}}" class="rounded">
+					<figcaption class="figure-cpation">{{route.title|cut:"(Completed)"}}- {{route.end_date}}</figcaption>
+				</figure>
+			{% endfor %}
+		</div>
+	</div>
+	<div class="row align-items-center no-gutters">
+		<div class="col-sm-2">
+			<h3>Total Distance All Runners</h3>
+		</div>
+		<div class="col-10"">
+			<div id="chart_div" style="width: 600px; height: 250px"></div>
+		</div>
+	</div>
 {% endblock %}
-		
+
